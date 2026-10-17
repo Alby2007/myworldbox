@@ -112,6 +112,17 @@ namespace CivMindOverhaul
         public static bool Assimilation = true;
         public static float AssimilationChance = 0.05f;
         public static float CultureUprisingBonus = 10f;
+        public static bool WarChest = true;
+        public static float WarChestDrawMax = 40f;
+        public static float TaxWeight = 1.4f;
+        public static float TaxCooldown = 0.6f;
+        public static float ItemCraftWeight = 2f;
+        public static float ItemCraftCooldown = 0.6f;
+        public static float ItemArmWeight = 1.5f;
+        public static float ItemArmCooldown = 0.5f;
+        public static float ArmDangerMult = 3f;
+        public static float TradeWeight = 1.5f;
+        public static float TradeWarMult = 0.3f;
         public static bool LogTuning = true;
 
         public static void Load(ModConfig pCfg)
@@ -228,6 +239,17 @@ namespace CivMindOverhaul
             Assimilation = Switch(pCfg, "Culture", "Assimilation", Assimilation);
             AssimilationChance = Slider(pCfg, "Culture", "AssimilationChance", AssimilationChance);
             CultureUprisingBonus = Slider(pCfg, "Culture", "CultureUprisingBonus", CultureUprisingBonus);
+            WarChest = Switch(pCfg, "Economy", "WarChest", WarChest);
+            WarChestDrawMax = Slider(pCfg, "Economy", "WarChestDrawMax", WarChestDrawMax);
+            TaxWeight = Slider(pCfg, "Economy", "TaxWeight", TaxWeight);
+            TaxCooldown = Slider(pCfg, "Economy", "TaxCooldown", TaxCooldown);
+            ItemCraftWeight = Slider(pCfg, "Economy", "ItemCraftWeight", ItemCraftWeight);
+            ItemCraftCooldown = Slider(pCfg, "Economy", "ItemCraftCooldown", ItemCraftCooldown);
+            ItemArmWeight = Slider(pCfg, "Economy", "ItemArmWeight", ItemArmWeight);
+            ItemArmCooldown = Slider(pCfg, "Economy", "ItemArmCooldown", ItemArmCooldown);
+            ArmDangerMult = Slider(pCfg, "Economy", "ArmDangerMult", ArmDangerMult);
+            TradeWeight = Slider(pCfg, "Economy", "TradeWeight", TradeWeight);
+            TradeWarMult = Slider(pCfg, "Economy", "TradeWarMult", TradeWarMult);
             LogTuning = Switch(pCfg, "Debug", "LogTuning", LogTuning);
         }
 

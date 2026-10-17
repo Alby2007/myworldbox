@@ -1,7 +1,7 @@
 {
     "name": "Civ Mind Overhaul",
     "author": "alber",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "description": "Gameplay overhaul for civ and war AI: demand-driven jobs, aptitude hiring, militia drafts, morale retreats, merit captains, smart war/siege targets, warscore surrender, focus fire, desertion, pillage, duels, morale shock, naval invasions, berserker rage, merit succession, reparations, war heroes, regional alliances, commander aura, rally flee, militia reserve, refugees, merit leaders, uprisings, king personality, pretender wars, kingdom collapse, anti-hegemon coalitions, war tribute, siege starvation, border pressure, reconstruction, holy wars, assimilation, war exhaustion.",
     "GUID": "devin.civmind",
     "targetGameBuild": 719,

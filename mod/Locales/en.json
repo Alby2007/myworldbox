@@ -114,6 +114,18 @@
     "Assimilation": "Occupied cities assimilate",
     "AssimilationChance": "Assimilation chance (per check)",
     "CultureUprisingBonus": "Foreign culture revolt ease",
+    "Economy": "Economy & Logistics",
+    "WarChest": "Treasury funds war plots",
+    "WarChestDrawMax": "War chest draw cap (gold)",
+    "TaxWeight": "Tax collection urge",
+    "TaxCooldown": "Tax cooldown (x vanilla)",
+    "ItemCraftWeight": "Crafting urge",
+    "ItemCraftCooldown": "Crafting cooldown (x vanilla)",
+    "ItemArmWeight": "Arming urge",
+    "ItemArmCooldown": "Arming cooldown (x vanilla)",
+    "ArmDangerMult": "Danger arming mult",
+    "TradeWeight": "Boat trade urge",
+    "TradeWarMult": "Trade during war (x)",
     "Debug": "Debug",
     "LogTuning": "Log tuning to Player.log"
 }

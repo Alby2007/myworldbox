@@ -74,11 +74,80 @@ namespace CivMindOverhaul
             {
                 Retune("check_warrior_transport", Cfg.TransportWeight, Cfg.TransportCooldown);
             }
+            Retune("give_tax", Cfg.TaxWeight, Cfg.TaxCooldown);
+            Retune("make_items", Cfg.ItemCraftWeight, Cfg.ItemCraftCooldown);
+            RetuneMult("try_to_take_city_item", Cfg.ItemArmWeight, Cfg.ItemArmCooldown, DangerArmMult);
+            RetuneMult("boat_trading", Cfg.TradeWeight, 1f, BlockadeMult);
+            Retune("boat_fishing", Cfg.TradeWeight, 1f);
             if (Cfg.MoraleRetreat)
             {
                 ReworkRetreat("run_away");
             }
             WrapPlots();
+        }
+
+        private static float DangerArmMult(Actor a)
+        {
+            return a.city != null && a.city.isInDanger() ? Cfg.ArmDangerMult : 1f;
+        }
+
+        private static float BlockadeMult(Actor a)
+        {
+            Kingdom k = a.kingdom;
+            if (k == null)
+            {
+                k = Rebel.Of(a.city);
+            }
+            if (k == null)
+            {
+                return 1f;
+            }
+            try
+            {
+                if (World.world.wars.hasWars(k))
+                {
+                    return Cfg.TradeWarMult;
+                }
+            }
+            catch
+            {
+            }
+            return 1f;
+        }
+
+        private static void RetuneMult(string pId, float pWeightMult, float pCooldownMult, Func<Actor, float> pMult)
+        {
+            DecisionAsset d = Find(pId);
+            if (d == null)
+            {
+                Log("missing decision: " + pId);
+                return;
+            }
+            if (!_origWeight.ContainsKey(pId))
+            {
+                _origWeight[pId] = d.weight;
+                _origCooldown[pId] = d.cooldown;
+                _origCustom[pId] = d.weight_calculate_custom;
+            }
+            DecisionActionWeight orig = _origCustom[pId];
+            float w = _origWeight[pId] * pWeightMult;
+            if (orig == null)
+            {
+                d.has_weight_custom = true;
+                d.weight_calculate_custom = delegate(Actor a)
+                {
+                    return w * pMult(a);
+                };
+            }
+            else
+            {
+                d.weight_calculate_custom = delegate(Actor a)
+                {
+                    return orig(a) * w * pMult(a);
+                };
+            }
+            d.cooldown = (int)(_origCooldown[pId] * pCooldownMult);
+            Log($"retuned {pId}: weight x{pWeightMult} (+situational), cooldown x{pCooldownMult}");
         }
 
         private static void Retune(string pId, float pWeightMult, float pCooldownMult, bool pDemandAware = false)

@@ -19,6 +19,7 @@ Vanilla background: [vanilla-ai-primer.md](vanilla-ai-primer.md) § "War & diplo
 v0.3 adds nine more features (15–23) riding a shared per-army tick — see **War Tactics** below.
 v0.4 adds ten more (24–33) — see **Politics, Battlefield Polish & Home Front**.
 v0.5 adds twelve more (35–46) — see **Realpolitik, Economy & Culture**.
+v0.6 adds the economy pack (48–51) — see **Economy & Logistics**.
 
 ## Where they land in the pipeline
 
@@ -390,3 +391,40 @@ Inside the uprising check: kingdoms at war for ≥ `WarExhaustYears` (via
 the empire from inside. Cities whose `culture` differs from the kingdom's get
 `+CultureUprisingBonus` on the loyalty gate — a foreign-culture city at loyalty 38
 already qualifies when `UprisingLoyalty` is 30.
+
+---
+
+# Economy & Logistics (features 48–51)
+
+v0.6 wires the civ economy into the war machine. Vanilla already has a full money
+loop — `generate_loot` (housed citizens gain `data.loot` from their home +
+biome), `give_tax` (loot flows citizen→leader→king, with cuts to citizen `money`
+and city `gold`), and plots charging `spendMoney`/`hasEnoughMoney` on
+`data.money`. The mod just turns the dials and adds one treasury mechanic.
+
+## 48. War chest
+
+`PatchIsWarNeeded` extension: when a king passes all war gates but is too poor for
+the `new_war` plot (`money_cost` 20), the capital treasury subsidises him — draw
+`min(WarChestDrawMax − money, capital gold)` via `takeResource` → `addMoney`. Rich
+kingdoms get to war faster; poor ones stall. `[CivMind] war chest: N gold to <king>`.
+
+## 49. Tax chain retune
+
+`give_tax` ×`TaxWeight` (1.4) / cd ×`TaxCooldown` (0.6) — the tribute pipeline
+citizen→leader→king runs more often, so kings and city gold stockpiles accumulate
+faster. Citizens still keep `kingdom.getLootMin()` (5).
+
+## 50. Item economy
+
+`make_items` (vanilla w0.4/cd90 — rare) → ×`ItemCraftWeight` (2), cd ×0.6.
+`try_to_take_city_item` (arms from `city.data.equipment`, cd 180!) →
+×`ItemArmWeight`, cd ×0.5, **plus** `× ArmDangerMult` (3) when `city.isInDanger` —
+drafted militia grabs weapons from storage instead of fighting barehanded.
+
+## 51. Trade boats & blockades
+
+`boat_trading`/`boat_fishing` ×`TradeWeight` (1.5) — busier docks in peacetime.
+`boat_trading` additionally ×`TradeWarMult` (0.3) while the boat's kingdom is at
+war — trade collapses under wartime pressure without touching `boat_transport_check`
+(the military ferry path).

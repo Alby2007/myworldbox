@@ -61,7 +61,13 @@ armies rout when beaten, and wars actually end.
 - **Assimilation** — conquered cities gradually adopt the victor's culture and faith
 - **War exhaustion** — long wars make occupied (and unhappy) cities likelier to revolt
 
-Every feature is toggleable/tunable in-game: **NML window → mod → Mod Configuration** (~80 options).
+### Economy & logistics (v0.6)
+- **War chest** — the capital treasury funds kings who are ready for war but short on cash
+- **Tax chain retune** — citizens→leaders→king tribute flows faster, filling war coffers
+- **Item economy** — crafting and arming are far more common; drafted militia grabs weapons in danger
+- **Trade boats & blockades** — docks trade harder in peace, sea trade collapses in war
+
+Every feature is toggleable/tunable in-game: **NML window → mod → Mod Configuration** (~90 options).
 See [docs/config-reference.md](docs/config-reference.md) for the full list.
 
 ## Install

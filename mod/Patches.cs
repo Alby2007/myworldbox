@@ -1472,6 +1472,7 @@ namespace CivMindOverhaul
             typeof(bool)
         });
         internal static readonly FieldInfo CityKingdom = AccessTools.Field(typeof(City), "kingdom");
+        internal static readonly FieldInfo ActorDataF = AccessTools.Field(typeof(Actor), "data");
         internal static readonly MethodInfo SetCulture = AccessTools.Method(typeof(City), "setCulture", new Type[] { typeof(Culture) });
         internal static readonly MethodInfo SetReligion = AccessTools.Method(typeof(City), "setReligion", new Type[] { typeof(Religion) });
         internal static readonly HashSet<long> Revolted = new HashSet<long>();
@@ -1561,6 +1562,20 @@ namespace CivMindOverhaul
                     && (pKingdom.data.timestamp_last_war == -1.0 || Date.getYearsSince(pKingdom.data.timestamp_last_war) > (double)SimGlobals.m.diplomacy_years_war_timeout))
                 {
                     __result = true;
+                }
+                if (__result && Cfg.WarChest && pKingdom.hasCapital() && Rebel.ActorDataF != null)
+                {
+                    ActorData kd = Rebel.ActorDataF.GetValue(king) as ActorData;
+                    if (kd != null && kd.money < Cfg.WarChestDrawMax)
+                    {
+                        int draw = (int)Math.Min(Cfg.WarChestDrawMax - kd.money, pKingdom.capital.getResourcesAmount("gold"));
+                        if (draw > 0)
+                        {
+                            pKingdom.capital.takeResource("gold", draw);
+                            king.addMoney(draw);
+                            UnityEngine.Debug.Log("[CivMind] war chest: " + draw + " gold to " + king.getName());
+                        }
+                    }
                 }
             }
             catch

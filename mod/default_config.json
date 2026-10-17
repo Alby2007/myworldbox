@@ -578,6 +578,83 @@
             "MaxFloatVal": 30.0
         }
     ],
+    "Economy": [
+        {
+            "Id": "WarChest",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "WarChestDrawMax",
+            "Type": "SLIDER",
+            "FloatVal": 40.0,
+            "MinFloatVal": 10.0,
+            "MaxFloatVal": 200.0
+        },
+        {
+            "Id": "TaxWeight",
+            "Type": "SLIDER",
+            "FloatVal": 1.4,
+            "MinFloatVal": 0.5,
+            "MaxFloatVal": 3.0
+        },
+        {
+            "Id": "TaxCooldown",
+            "Type": "SLIDER",
+            "FloatVal": 0.6,
+            "MinFloatVal": 0.2,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "ItemCraftWeight",
+            "Type": "SLIDER",
+            "FloatVal": 2.0,
+            "MinFloatVal": 0.5,
+            "MaxFloatVal": 4.0
+        },
+        {
+            "Id": "ItemCraftCooldown",
+            "Type": "SLIDER",
+            "FloatVal": 0.6,
+            "MinFloatVal": 0.2,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "ItemArmWeight",
+            "Type": "SLIDER",
+            "FloatVal": 1.5,
+            "MinFloatVal": 0.5,
+            "MaxFloatVal": 4.0
+        },
+        {
+            "Id": "ItemArmCooldown",
+            "Type": "SLIDER",
+            "FloatVal": 0.5,
+            "MinFloatVal": 0.1,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "ArmDangerMult",
+            "Type": "SLIDER",
+            "FloatVal": 3.0,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 6.0
+        },
+        {
+            "Id": "TradeWeight",
+            "Type": "SLIDER",
+            "FloatVal": 1.5,
+            "MinFloatVal": 0.5,
+            "MaxFloatVal": 3.0
+        },
+        {
+            "Id": "TradeWarMult",
+            "Type": "SLIDER",
+            "FloatVal": 0.3,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        }
+    ],
     "HomeFront": [
         {
             "Id": "RefugeeBoost",

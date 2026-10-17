@@ -110,7 +110,7 @@ Every hook point, its mechanism, and its config gate:
 | `PatchTryWarrior` | `City.tryToMakeWarrior` | prefix | `MilitiaReserve` | Peacetime warrior fill cap |
 | `PatchSetLeader` | `City.setLeader` | prefix (ref `pActor`) | `MeritLeaders` | Stewardship-scored leader swap |
 | `PatchCheckLoyalty` | `CityBehCheckLoyalty.execute` | postfix | `Uprisings`, `SiegeStarvation`, `Assimilation` | Uprising trigger + siege food drain + culture/religion conversion |
-| `PatchIsWarNeeded` | `DiplomacyHelpers.isWarNeeded` | postfix (ref `__result`) | `KingPersonality` | Pacifist veto / warlord bypass |
+| `PatchIsWarNeeded` | `DiplomacyHelpers.isWarNeeded` | postfix (ref `__result`) | `KingPersonality`, `WarChest` | Pacifist veto / warlord bypass / treasury war funding |
 | `PatchSetKing` | `Kingdom.setKing` | postfix | `PretenderWars`, `CollapsePressure` | Pretender revolt / province drift |
 | `PatchPlotsInit` | `PlotsLibrary.init` | postfix | `AntiHegemon` | Wraps `alliance_destroy.check_is_possible` |
 | `PatchSupplyCities` | `CityBehSupplyKingdomCities.execute` | postfix | `WarTribute`, `SupplyWarMult` | Wartime tribute + faster aid |
@@ -119,8 +119,10 @@ Every hook point, its mechanism, and its config gate:
 Plus tuning-only features with no dedicated patch class (see `Tuning.Apply`):
 `find_city_job` demand weight, expansion/social/reproduction weights, housing-gated
 reproduction, `run_away` morale check (also consumes `WarFx.Shaken` and applies the
-commander aura), `warrior_train_with_dummy`, `check_warrior_transport` retunes, and the
-`check_join_city`/`check_join_empty_nearby_city` refugee weight wraps.
+commander aura), `warrior_train_with_dummy`, `check_warrior_transport` retunes, the
+`check_join_city`/`check_join_empty_nearby_city` refugee weight wraps, and the economy
+retunes: `give_tax`, `make_items`, `try_to_take_city_item` (danger spike),
+`boat_trading`/`boat_fishing` (wartime blockade wrap).
 
 `WarFx` (in `Patches.cs`) is a tiny shared-state holder: `Shaken: armyId → Time.time` expiry,
 written by `PatchArmyTick` on field captain-death and read by the `run_away` delegate;
@@ -158,6 +160,7 @@ null-checked invocation — if a game update renames a member, the patch degrade
 | `Actor.beh_tile_target` | field | `PatchFlee` |
 | `City.makeOwnKingdom` | method | `Rebel` (secession — uprisings, pretenders, drift) |
 | `DiplomacyManager.startWar` | method | `Rebel` (rebellion wars) |
+| `Actor.data` | field | `Rebel`/`PatchIsWarNeeded` (`ActorData.money` war chest) |
 | `City.setCulture`, `City.setReligion` | method | `PatchCheckLoyalty` (assimilation) |
 | `City.addZone`, `City.removeZone` | method | `PatchBorderSteal` (zone grab) |
 

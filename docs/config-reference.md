@@ -166,6 +166,24 @@ v0.5 features — religion-driven wars and occupied-city assimilation.
 | `AssimilationChance` | Assimilation chance (per check) | slider | 0.05 | 0–0.3 | Per loyalty-check roll while occupied |
 | `CultureUprisingBonus` | Foreign culture revolt ease | slider | 10 | 0–30 | Loyalty-gate bonus for foreign-culture cities |
 
+## Economy
+
+v0.6 features — loot/tax economy, item production, trade boats.
+
+| Id | Label | Type | Default | Range | Controls |
+|---|---|---|---|---|---|
+| `WarChest` | Treasury funds war plots | switch | on | — | Capital gold tops up kings' `money` when war-ready |
+| `WarChestDrawMax` | War chest draw cap (gold) | slider | 40 | 10–200 | King `money` topped up to this max |
+| `TaxWeight` | Tax collection urge | slider | 1.4 | 0.5–3 | `give_tax` weight × |
+| `TaxCooldown` | Tax cooldown (x vanilla) | slider | 0.6 | 0.2–1.0 | `give_tax` cooldown × (90s base) |
+| `ItemCraftWeight` | Crafting urge | slider | 2.0 | 0.5–4 | `make_items` weight × (0.4 base) |
+| `ItemCraftCooldown` | Crafting cooldown (x vanilla) | slider | 0.6 | 0.2–1.0 | `make_items` cooldown × (90s base) |
+| `ItemArmWeight` | Arming urge | slider | 1.5 | 0.5–4 | `try_to_take_city_item` weight × |
+| `ItemArmCooldown` | Arming cooldown (x vanilla) | slider | 0.5 | 0.1–1.0 | its cooldown × (180s base) |
+| `ArmDangerMult` | Danger arming mult | slider | 3.0 | 1–6 | Extra weight × while `isInDanger` |
+| `TradeWeight` | Boat trade urge | slider | 1.5 | 0.5–3 | `boat_trading`/`boat_fishing` weight × |
+| `TradeWarMult` | Trade during war (x) | slider | 0.3 | 0–1 | `boat_trading` weight × while at war |
+
 ## Debug
 
 | Id | Label | Default | Controls |

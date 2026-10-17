@@ -45,6 +45,7 @@
 - Succession chaos: `KingdomBehCheckKing` — no clan heir + leaders empty → `checkKingdomChaos` splits ALL non-capital cities (`pFellApart:true`, no war); `shattered_crown` culture → splits among clan; `unbroken_chain` culture OR rebellions-law-off → falls back to `getKingFromLeaders`
 - City food = `Σ storage.resources` slots where `ResourceAsset.food == true` — `Building.resources.getRandomFoodAsset()` picks one, `City.takeResource(id, n)` drains it
 - `alliance_destroy` vanilla gates: alliance ≥10y + member ≥10y + initiator supreme-or-2nd-best + alliance power > 2× all others + contains supreme — very strict
+- Economy: `data.loot` (citizen hoard, emptied by tax) vs `data.money` (spendable — plots charge `spendMoney`/`hasEnoughMoney`); `give_tax` chain: citizen `loot`→leader, leader→king (`getTaxRateLocal/Tribute`); `loot_generation` from house building + biome; `money_cost` on PlotAsset (new_war=20); `city.data.equipment` holds craftable items (`try_to_take_city_item` requires `inOwnCityBorders` + `hasAnyItem`)
 - Siege: `CityBehCheckAttackZone` → `findTargetCity` = nearest reachable war city; `isOkToSendArmy` = army fill ≥ 0.7; `Army.findCaptain` = nearest/random unit (no merit); leader→`warrior_army_leader_move_to_attack_target`, followers→`warrior_army_follow_leader` (unique decisions → `list_others` → evaluated for ALL non-boat actors)
 - Naval invasions via `check_warrior_transport`/`BehCityActorWarriorTaxiCheck`; attackers focus `type_watch_tower` buildings (BehCityActorCheckAttack)
 - `War.update` (every frame via WarManager): ends only on main-side death / 0 cities after 10y — **no stalemate peace**; `eventFriendship`/`eventSpite` plots can end/start wars
@@ -104,7 +105,14 @@
 44. Assimilation — `PatchCheckLoyalty`: occupied + `AssimilationChance` → `setCulture`/`setReligion` (internal → `Rebel.SetCulture/SetReligion` reflect)
 45. War exhaustion — `PatchCheckLoyalty`: at war ≥ `WarExhaustYears` (via `k.data.timestamp_last_war`) → `UprisingChance × WarExhaustMult`
 46. Foreign-culture unrest — `PatchCheckLoyalty`: `city.culture != kingdom.culture` → loyalty gate `+CultureUprisingBonus` (revolt easier)
-47. `Rebel` shared helper (Patches.cs): reflected `makeOwnKingdom`/`startWar`/`City.kingdom`/`setCulture`/`setReligion`, `Revolted` once-per-city set, `SparkRevolt` (rebellion war + aligned cities + `logCityRevolt`), `FellApart` (peaceful secession), `Of(city)` kingdom lookup
+47. `Rebel` shared helper (Patches.cs): reflected `makeOwnKingdom`/`startWar`/`City.kingdom`/`Actor.data`/`setCulture`/`setReligion`, `Revolted` once-per-city set, `SparkRevolt` (rebellion war + aligned cities + `logCityRevolt`), `FellApart` (peaceful secession), `Of(city)` kingdom lookup
+
+## Mod features (v0.6 — economy & logistics)
+
+48. War chest — `PatchIsWarNeeded` ext: when a king CAN declare war but `data.money < WarChestDrawMax`, draw `min(shortfall, capital gold)` via `takeResource` → `king.addMoney` — treasury funds plots (plots charge `data.money` via `spendMoney`)
+49. Tax chain retune — `give_tax` w2.55/cd90 → ×TaxWeight/×TaxCooldown; vanilla flow: `loot → leader loot → king loot + citizen money + city gold` (`BehActorGiveTax`; `data.loot`/`data.money` are separate — `ActorData.money`/`loot` public props, `Actor.data` internal)
+50. Item economy — `make_items` (w0.4→×ItemCraftWeight) + `try_to_take_city_item` (cd180→×ItemArmCooldown) via `Tuning.RetuneMult`; danger spike: `city.isInDanger` → weight ×ArmDangerMult (militia grabs weapons)
+51. Trade boats — `boat_trading`/`boat_fishing` ×TradeWeight; wartime blockade: `boat_trading` ×TradeWarMult when kingdom at war (`RetuneMult` situational wrap; boat kingdom via `a.kingdom ?? Rebel.Of(a.city)`)
 
 ## Access gotchas
 - `internal` (use `AccessTools` reflection): `City.hasBuildingToBuild`, `hasStorageBuilding`, `hasBuildingType`, `City.kingdom`, `City.city_center`, `City.zones`, `City.storages`, `City._timer_warrior`, `City.tryToMakeWarrior`, `City.makeOwnKingdom`, `City.addZone`/`removeZone`, `City.setCulture`/`setReligion`, `DiplomacyManager.startWar`, `Actor.beh_tile_target`, `Actor.isProfession`, `Actor.addExperience`, `Actor.data`, `Actor.attack_target`, `Actor.has_attack_target`, `Actor.getHit` (internal override, 7 params), `BaseSimObject.stats`, `BaseSimObject.addStatusEffect(string,float,bool)` — note the StatusAsset overload is separate

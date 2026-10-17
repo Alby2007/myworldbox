@@ -21,6 +21,7 @@ v0.4 adds ten more (24–33) — see **Politics, Battlefield Polish & Home Front
 v0.5 adds twelve more (35–46) — see **Realpolitik, Economy & Culture**.
 v0.6 adds the economy pack (48–51) — see **Economy & Logistics**.
 v0.7 deepens it (52–56): plunder-driven targeting, crown loot tax, soldier wages, trade-run income, and an equipment market.
+v0.8 closes the loop (57–61): tax unrest, corruption, famine relief, labor migration, golden-age economies.
 
 ## Where they land in the pipeline
 
@@ -466,3 +467,41 @@ Distant partners pay more; docks become real revenue.
 postfix charges the citizen `delta × ItemPricePct` (100%) from `data.money`,
 depositing it into the city's gold stockpile. Free when `city.isInDanger` — siege
 draftees still arm for free; peacetime gearing costs coin and funds the treasury.
+
+## 57. Tax → unrest feedback
+
+`PatchGiveTax` postfix on `BehActorGiveTax`: vanilla already dips happiness
+(−5, or −10 above a 0.7 rate) on every `paid_tax` event — the mod stacks an extra
+`(taxRate − TaxUnrestRate) × TaxUnrestSeverity` dip on citizens whenever
+`getTaxRateLocal()` exceeds the threshold (default 0.5). Since `give_tax` was
+retuned ×1.4, tax pressure now feeds the occupied-city uprising pipeline.
+
+## 58. Corruption
+
+The same `PatchGiveTax` postfix records `king.loot` before a leader pays tribute
+(`__state`) and claws back `gained × CorruptionPct × (1 − loyalty/100)` — the
+skim moves from `king.data.loot` into the leader's `money`. Disloyal provinces
+starve the war chest while their leaders quietly get rich.
+
+## 59. Famine relief
+
+`PatchSupplyCities` gains a prefix-supplant: when `FamineRelief` is on, the supply
+run goes to the kingdom's **hungriest** qualifying city (lowest `getTotalFood()`)
+instead of `LoopRandom()`'s pick. Vanilla surplus/take thresholds and the
+leader `multiplier_supply_timer` cooldown are replicated faithfully; when no city
+is below `supply_bound_take` the vanilla path runs untouched.
+
+## 60. Labor migration
+
+`PatchCityTarget` supplants `BehFindNearbyPotentialCivCityToJoin.getPotentialCityNearby`:
+homeless migrants pick `argmax(sameKingdomBonus + freeJobSlots × 10 − distance)`
+across welcoming same-island cities instead of the first random match — a real
+labor market on the existing `check_join_city` path (which the refugee boost
+already retunes).
+
+## 61. Golden age dividend
+
+Kingdoms at peace ≥ `GoldenAgeYears` (15y — via `Rebel.PeaceYears`, using
+`timestamp_last_war` or kingdom age for never-at-war realms) get `make_items`
+weight × `GoldenAgeMult` (1.5) and +`GoldenAgeBuilders` builder slots via
+`PatchCitizenTasks`. Peaceful kingdoms craft and build faster — patience pays.

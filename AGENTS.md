@@ -122,6 +122,14 @@
 55. Trade income — `PatchBoatTrade` postfix on `BehBoatMakeTrade.execute`: `addToInventory("gold", TradeIncomeBase + dist(homeCenter→beh_building_target dock) × TradeIncomePerTile)`
 56. Equipment market — `PatchGiveItem` on static `City.giveItem`: prefix `__state` = equipped value sum → postfix charge `delta × ItemPricePct/100` from `data.money` → `addResourcesToRandomStockpile("gold")`; free while `city.isInDanger`
 
+## Mod features (v0.8 — economy feedback loops)
+
+57. Tax→unrest — `PatchGiveTax` postfix on `BehActorGiveTax`: `getTaxRateLocal() > TaxUnrestRate` → extra `changeHappiness("paid_tax", -(rate-thr)×TaxUnrestSeverity)` on top of vanilla's −5/−10
+58. Corruption — `PatchGiveTax` prefix `__state` = king.loot → postfix skim `gained × CorruptionPct × (1 − cityLoyalty/100)`: `kingData.loot -= skim; leader.addMoney(skim)`
+59. Famine relief — `PatchSupplyCities` prefix-supplant: supply run → hungriest qualifying city (min `getTotalFood`) instead of `LoopRandom`; replicates surplus scan + `updateSupplyTimer` via reflected `stats`
+60. Labor migration — `PatchCityTarget` prefix-supplant `getPotentialCityNearby`: pick `argmax(freeJobSlots×10 − dist + sameKingdom 100)` over welcoming same-island cities
+61. Golden age — `Rebel.PeaceYears` (`!hasWars` → `yearsSince(timestamp_last_war)` or `getAge()` if never at war) ≥ `GoldenAgeYears` → `make_items` ×`GoldenAgeMult` (Tuning) + `GoldenAgeBuilders` extra builder slots (`PatchCitizenTasks`)
+
 ## Access gotchas
 - `internal` (use `AccessTools` reflection): `City.hasBuildingToBuild`, `hasStorageBuilding`, `hasBuildingType`, `City.kingdom`, `City.city_center`, `City.zones`, `City.storages`, `City._timer_warrior`, `City.tryToMakeWarrior`, `City.makeOwnKingdom`, `City.addZone`/`removeZone`, `City.setCulture`/`setReligion`, `DiplomacyManager.startWar`, `Actor.beh_tile_target`, `Actor.beh_building_target`, `Actor.isProfession`, `Actor.addExperience`, `Actor.data`, `Actor.attack_target`, `Actor.has_attack_target`, `Actor.getHit` (internal override, 7 params), `BaseSimObject.stats`, `BaseSimObject.addStatusEffect(string,float,bool)` — note the StatusAsset overload is separate
 - `City.giveItem(Actor, List<long>, City)` is **public static**, returns bool — `PatchGiveItem` diffs total equipped `Item.getValue()` across all `EquipmentType` slots (prefix `__state` → postfix charge `ActorData.money`, deposit to city gold; free while `isInDanger`)

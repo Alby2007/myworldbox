@@ -61,7 +61,7 @@ armies rout when beaten, and wars actually end.
 - **Assimilation** — conquered cities gradually adopt the victor's culture and faith
 - **War exhaustion** — long wars make occupied (and unhappy) cities likelier to revolt
 
-### Economy & logistics (v0.6–v0.7)
+### Economy & logistics (v0.6–v0.8)
 - **War chest** — the capital treasury funds kings who are ready for war but short on cash
 - **Tax chain retune** — citizens→leaders→king tribute flows faster, filling war coffers
 - **Item economy** — crafting and arming are far more common; drafted militia grabs weapons in danger
@@ -71,6 +71,11 @@ armies rout when beaten, and wars actually end.
 - **Soldier wages & mutiny** — standing armies drain city gold; broke kingdoms' armies desert
 - **Trade income** — completed boat runs pay gold scaled by distance; docks earn real revenue
 - **Equipment market** — citizens pay `money` for gear; armorer markets fund city stockpiles
+- **Tax→unrest** — heavy local tax rates push citizens toward revolt
+- **Corruption** — disloyal city leaders skim the tribute meant for the king
+- **Famine relief** — kingdom supply runs go to the hungriest city, not a random one
+- **Labor migration** — homeless migrants pick cities with open jobs
+- **Golden age** — kingdoms at peace for years craft faster and get bonus builders
 
 Every feature is toggleable/tunable in-game: **NML window → mod → Mod Configuration** (~105 options).
 See [docs/config-reference.md](docs/config-reference.md) for the full list.

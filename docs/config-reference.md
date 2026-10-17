@@ -168,7 +168,7 @@ v0.5 features — religion-driven wars and occupied-city assimilation.
 
 ## Economy
 
-v0.6–v0.7 features — loot/tax economy, item production, trade boats, plunder incentives, wages.
+v0.6–v0.8 features — loot/tax economy, item production, trade boats, plunder incentives, wages, unrest/corruption, triage logistics, golden ages.
 
 | Id | Label | Type | Default | Range | Controls |
 |---|---|---|---|---|---|
@@ -196,6 +196,18 @@ v0.6–v0.7 features — loot/tax economy, item production, trade boats, plunder
 | `TradeIncomePerTile` | Trade gold per tile | slider | 0.15 | 0–2 | Distance scaling to foreign dock |
 | `EquipmentMarket` | Citizens pay for equipment | switch | on | — | `City.giveItem` charges `money` |
 | `ItemPricePct` | Item price (% of value) | slider | 100 | 0–300 | % of equipped-value delta charged |
+| `TaxUnrest` | Heavy taxes anger citizens | switch | on | — | Extra happiness dip past threshold |
+| `TaxUnrestRate` | Tax unrest threshold (rate) | slider | 0.5 | 0–1 | `getTaxRateLocal()` above this angers citizens |
+| `TaxUnrestSeverity` | Tax unhappiness severity | slider | 8 | 0–50 | Happiness dip scale over threshold |
+| `Corruption` | Leaders skim royal tribute | switch | on | — | Loyalty-scaled tribute skim to leader `money` |
+| `CorruptionPct` | Tribute skim (% of forwarded) | slider | 25 | 0–80 | % of king's tribute pocketed |
+| `CorruptionChance` | Corruption chance (per tribute) | slider | 0.5 | 0–1 | Roll per tribute payment |
+| `FamineRelief` | Supply runs triage famine | switch | on | — | Kingdom supply → hungriest city first |
+| `LaborMigration` | Migrants seek job vacancies | switch | on | — | `getPotentialCityNearby` prefers free job slots |
+| `GoldenAge` | Golden age bonus | switch | on | — | Peacetime crafting/build bonus |
+| `GoldenAgeYears` | Peace years for golden age | slider | 15 | 1–60 | `Rebel.PeaceYears` threshold |
+| `GoldenAgeMult` | Golden age crafting (x) | slider | 1.5 | 1–4 | `make_items` weight × while at peace |
+| `GoldenAgeBuilders` | Golden age extra builders | slider | 1 | 0–5 | Extra builder slots during golden age |
 
 ## Debug
 

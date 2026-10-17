@@ -139,6 +139,18 @@
     "TradeIncomePerTile": "Trade gold per tile",
     "EquipmentMarket": "Citizens pay for equipment",
     "ItemPricePct": "Item price (% of value)",
+    "TaxUnrest": "Heavy taxes anger citizens",
+    "TaxUnrestRate": "Tax unrest threshold (rate)",
+    "TaxUnrestSeverity": "Tax unhappiness severity",
+    "Corruption": "Leaders skim royal tribute",
+    "CorruptionPct": "Tribute skim (% of forwarded)",
+    "CorruptionChance": "Corruption chance (per tribute)",
+    "FamineRelief": "Supply runs triage famine",
+    "LaborMigration": "Migrants seek job vacancies",
+    "GoldenAge": "Golden age bonus",
+    "GoldenAgeYears": "Peace years for golden age",
+    "GoldenAgeMult": "Golden age crafting (x)",
+    "GoldenAgeBuilders": "Golden age extra builders",
     "Debug": "Debug",
     "LogTuning": "Log tuning to Player.log"
 }

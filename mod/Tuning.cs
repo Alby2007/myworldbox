@@ -75,7 +75,7 @@ namespace CivMindOverhaul
                 Retune("check_warrior_transport", Cfg.TransportWeight, Cfg.TransportCooldown);
             }
             Retune("give_tax", Cfg.TaxWeight, Cfg.TaxCooldown);
-            Retune("make_items", Cfg.ItemCraftWeight, Cfg.ItemCraftCooldown);
+            RetuneMult("make_items", Cfg.ItemCraftWeight, Cfg.ItemCraftCooldown, GoldenAgeMult);
             RetuneMult("try_to_take_city_item", Cfg.ItemArmWeight, Cfg.ItemArmCooldown, DangerArmMult);
             RetuneMult("boat_trading", Cfg.TradeWeight, 1f, BlockadeMult);
             Retune("boat_fishing", Cfg.TradeWeight, 1f);
@@ -89,6 +89,30 @@ namespace CivMindOverhaul
         private static float DangerArmMult(Actor a)
         {
             return a.city != null && a.city.isInDanger() ? Cfg.ArmDangerMult : 1f;
+        }
+
+        private static float GoldenAgeMult(Actor a)
+        {
+            if (!Cfg.GoldenAge)
+            {
+                return 1f;
+            }
+            try
+            {
+                Kingdom k = a.kingdom;
+                if (k == null)
+                {
+                    k = Rebel.Of(a.city);
+                }
+                if (k != null && Rebel.PeaceYears(k) >= Cfg.GoldenAgeYears)
+                {
+                    return Cfg.GoldenAgeMult;
+                }
+            }
+            catch
+            {
+            }
+            return 1f;
         }
 
         private static float BlockadeMult(Actor a)

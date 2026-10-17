@@ -734,6 +734,80 @@
             "FloatVal": 100.0,
             "MinFloatVal": 0.0,
             "MaxFloatVal": 300.0
+        },
+        {
+            "Id": "TaxUnrest",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "TaxUnrestRate",
+            "Type": "SLIDER",
+            "FloatVal": 0.5,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "TaxUnrestSeverity",
+            "Type": "SLIDER",
+            "FloatVal": 8.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 50.0
+        },
+        {
+            "Id": "Corruption",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "CorruptionPct",
+            "Type": "SLIDER",
+            "FloatVal": 25.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 80.0
+        },
+        {
+            "Id": "CorruptionChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.5,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "FamineRelief",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "LaborMigration",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "GoldenAge",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "GoldenAgeYears",
+            "Type": "SLIDER",
+            "FloatVal": 15.0,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 60.0
+        },
+        {
+            "Id": "GoldenAgeMult",
+            "Type": "SLIDER",
+            "FloatVal": 1.5,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 4.0
+        },
+        {
+            "Id": "GoldenAgeBuilders",
+            "Type": "SLIDER",
+            "FloatVal": 1.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 5.0
         }
     ],
     "HomeFront": [

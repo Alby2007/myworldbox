@@ -136,6 +136,18 @@ namespace CivMindOverhaul
         public static float TradeIncomePerTile = 0.15f;
         public static bool EquipmentMarket = true;
         public static float ItemPricePct = 100f;
+        public static bool TaxUnrest = true;
+        public static float TaxUnrestRate = 0.5f;
+        public static float TaxUnrestSeverity = 8f;
+        public static bool Corruption = true;
+        public static float CorruptionPct = 25f;
+        public static float CorruptionChance = 0.5f;
+        public static bool FamineRelief = true;
+        public static bool LaborMigration = true;
+        public static bool GoldenAge = true;
+        public static float GoldenAgeYears = 15f;
+        public static float GoldenAgeMult = 1.5f;
+        public static float GoldenAgeBuilders = 1f;
         public static bool LogTuning = true;
 
         public static void Load(ModConfig pCfg)
@@ -276,6 +288,18 @@ namespace CivMindOverhaul
             TradeIncomePerTile = Slider(pCfg, "Economy", "TradeIncomePerTile", TradeIncomePerTile);
             EquipmentMarket = Switch(pCfg, "Economy", "EquipmentMarket", EquipmentMarket);
             ItemPricePct = Slider(pCfg, "Economy", "ItemPricePct", ItemPricePct);
+            TaxUnrest = Switch(pCfg, "Economy", "TaxUnrest", TaxUnrest);
+            TaxUnrestRate = Slider(pCfg, "Economy", "TaxUnrestRate", TaxUnrestRate);
+            TaxUnrestSeverity = Slider(pCfg, "Economy", "TaxUnrestSeverity", TaxUnrestSeverity);
+            Corruption = Switch(pCfg, "Economy", "Corruption", Corruption);
+            CorruptionPct = Slider(pCfg, "Economy", "CorruptionPct", CorruptionPct);
+            CorruptionChance = Slider(pCfg, "Economy", "CorruptionChance", CorruptionChance);
+            FamineRelief = Switch(pCfg, "Economy", "FamineRelief", FamineRelief);
+            LaborMigration = Switch(pCfg, "Economy", "LaborMigration", LaborMigration);
+            GoldenAge = Switch(pCfg, "Economy", "GoldenAge", GoldenAge);
+            GoldenAgeYears = Slider(pCfg, "Economy", "GoldenAgeYears", GoldenAgeYears);
+            GoldenAgeMult = Slider(pCfg, "Economy", "GoldenAgeMult", GoldenAgeMult);
+            GoldenAgeBuilders = Slider(pCfg, "Economy", "GoldenAgeBuilders", GoldenAgeBuilders);
             LogTuning = Switch(pCfg, "Debug", "LogTuning", LogTuning);
         }
 

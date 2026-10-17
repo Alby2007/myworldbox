@@ -275,6 +275,14 @@ namespace CivMindOverhaul
                         jobs.addToJob(CitizenJobLibrary.builder, (int)Cfg.ReconBuilders);
                     }
                 }
+                if (Cfg.GoldenAge && Cfg.GoldenAgeBuilders > 0)
+                {
+                    Kingdom k2 = Rebel.Of(pCity);
+                    if (k2 != null && Rebel.PeaceYears(k2) >= Cfg.GoldenAgeYears)
+                    {
+                        jobs.addToJob(CitizenJobLibrary.builder, (int)Cfg.GoldenAgeBuilders);
+                    }
+                }
             }
             catch (Exception e)
             {
@@ -1523,6 +1531,16 @@ namespace CivMindOverhaul
             return pCity == null || CityKingdom == null ? null : CityKingdom.GetValue(pCity) as Kingdom;
         }
 
+        internal static double PeaceYears(Kingdom k)
+        {
+            if (k == null || !k.isAlive() || World.world.wars.hasWars(k))
+            {
+                return 0.0;
+            }
+            double last = k.data.timestamp_last_war;
+            return last >= 0.0 ? Date.getYearsSince(last) : k.getAge();
+        }
+
         internal static Kingdom SparkRevolt(City pCity, Kingdom pOldK, Actor pRebel)
         {
             if (MakeOwnKingdom == null || StartWar == null || pRebel == null || pRebel.isRekt())
@@ -1741,9 +1759,171 @@ namespace CivMindOverhaul
         }
     }
 
+    [HarmonyPatch(typeof(BehActorGiveTax), "execute")]
+    internal static class PatchGiveTax
+    {
+        private static void Prefix(Actor pActor, out int __state)
+        {
+            __state = -1;
+            try
+            {
+                if (pActor != null && pActor.isCityLeader() && pActor.kingdom != null && pActor.kingdom.hasKing() && pActor.kingdom.king != null)
+                {
+                    __state = pActor.kingdom.king.loot;
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private static void Postfix(Actor pActor, int __state)
+        {
+            if ((!Cfg.TaxUnrest && !Cfg.Corruption) || pActor == null || pActor.isRekt())
+            {
+                return;
+            }
+            try
+            {
+                Kingdom k = pActor.kingdom;
+                if (k == null || k.isNeutral())
+                {
+                    return;
+                }
+                if (Cfg.TaxUnrest && !pActor.isKing() && !pActor.isCityLeader())
+                {
+                    float rate = k.getTaxRateLocal();
+                    if (rate > Cfg.TaxUnrestRate)
+                    {
+                        int dip = (int)Math.Round((rate - Cfg.TaxUnrestRate) * Cfg.TaxUnrestSeverity);
+                        if (dip > 0)
+                        {
+                            pActor.changeHappiness("paid_tax", -dip);
+                        }
+                    }
+                }
+                if (Cfg.Corruption && __state >= 0 && pActor.isCityLeader() && pActor.city != null && k.hasKing() && k.king != null)
+                {
+                    Actor king = k.king;
+                    int gained = king.loot - __state;
+                    if (gained > 0 && Randy.randomChance(Cfg.CorruptionChance))
+                    {
+                        float loyaltyFactor = Math.Max(0f, 1f - pActor.city.getLoyalty() / 100f);
+                        int skim = (int)(gained * Cfg.CorruptionPct / 100f * loyaltyFactor);
+                        if (skim > 0 && Rebel.ActorDataF != null)
+                        {
+                            ActorData kd = Rebel.ActorDataF.GetValue(king) as ActorData;
+                            if (kd != null)
+                            {
+                                kd.loot = Math.Max(0, kd.loot - skim);
+                                pActor.addMoney(skim);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[CivMind] give-tax patch failed: " + e.Message);
+            }
+        }
+    }
+
     [HarmonyPatch(typeof(CityBehSupplyKingdomCities), "execute")]
     internal static class PatchSupplyCities
     {
+        private static readonly FieldInfo _stats = AccessTools.Field(typeof(BaseSimObject), "stats");
+
+        private static bool Prefix(City pCity, ref BehResult __result)
+        {
+            if (!Cfg.FamineRelief || pCity == null)
+            {
+                return true;
+            }
+            try
+            {
+                Kingdom k = Rebel.Of(pCity);
+                if (k == null || k.countCities() <= 1 || pCity.data.timer_supply > 0f || !pCity.hasStockpiles() || !pCity.hasCulture())
+                {
+                    return true;
+                }
+                Building stockpile = pCity.getRandomStockpile();
+                if (stockpile == null)
+                {
+                    return true;
+                }
+                ListPool<CityStorageSlot> surplus = new ListPool<CityStorageSlot>();
+                try
+                {
+                    foreach (CityStorageSlot slot in stockpile.resources.getSlots())
+                    {
+                        if (slot.amount > slot.asset.supply_bound_give)
+                        {
+                            surplus.Add(slot);
+                        }
+                    }
+                    if (surplus.Count == 0)
+                    {
+                        return true;
+                    }
+                    City best = null;
+                    CityStorageSlot pick = null;
+                    foreach (City c in k.getCities())
+                    {
+                        if (c == pCity)
+                        {
+                            continue;
+                        }
+                        CityStorageSlot need = null;
+                        for (int i = 0; i < surplus.Count; i++)
+                        {
+                            if (c.getResourcesAmount(surplus[i].id) < surplus[i].asset.supply_bound_take)
+                            {
+                                need = surplus[i];
+                                break;
+                            }
+                        }
+                        if (need == null)
+                        {
+                            continue;
+                        }
+                        if (best == null || c.getTotalFood() < best.getTotalFood())
+                        {
+                            best = c;
+                            pick = need;
+                        }
+                    }
+                    if (best == null || pick == null)
+                    {
+                        return true;
+                    }
+                    pCity.takeResource(pick.id, pick.asset.supply_give);
+                    best.addResourcesToRandomStockpile(pick.id, pick.asset.supply_give);
+                    float timer = 30f;
+                    if (pCity.hasLeader() && _stats != null)
+                    {
+                        BaseStats s = _stats.GetValue(pCity.leader) as BaseStats;
+                        if (s != null)
+                        {
+                            timer *= s["multiplier_supply_timer"];
+                        }
+                    }
+                    pCity.data.timer_supply = Math.Max(10f, timer);
+                    __result = BehResult.Continue;
+                    return false;
+                }
+                finally
+                {
+                    surplus.Dispose();
+                }
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[CivMind] famine relief failed: " + e.Message);
+                return true;
+            }
+        }
+
         private static void Postfix(City pCity)
         {
             if ((!Cfg.WarTribute && Cfg.SupplyWarMult >= 1f) || pCity == null)
@@ -1924,6 +2104,67 @@ namespace CivMindOverhaul
                 }
             }
             return v;
+        }
+    }
+
+    [HarmonyPatch(typeof(BehFindNearbyPotentialCivCityToJoin), "getPotentialCityNearby")]
+    internal static class PatchCityTarget
+    {
+        private static readonly FieldInfo _cityCenter = AccessTools.Field(typeof(City), "city_center");
+
+        private static bool Prefix(WorldTile pFromTile, Actor pActor, ref City __result)
+        {
+            if (!Cfg.LaborMigration || _cityCenter == null || pFromTile == null || pActor == null)
+            {
+                return true;
+            }
+            try
+            {
+                City best = null;
+                float bestScore = float.MinValue;
+                float range = SimGlobals.m.nomad_check_far_city_range;
+                for (int i = 0; i < World.world.cities.list.Count; i++)
+                {
+                    City c = World.world.cities.list[i];
+                    WorldTile t = c.getTile();
+                    if (t == null || c.isNeutral())
+                    {
+                        continue;
+                    }
+                    float r = range;
+                    Kingdom cKingdom = Rebel.Of(c);
+                    if (!pActor.isNomad() && cKingdom != pActor.kingdom)
+                    {
+                        r *= 3f;
+                    }
+                    float dist = Toolbox.DistVec3(pFromTile.posV, (UnityEngine.Vector2)_cityCenter.GetValue(c));
+                    if (dist > r || !c.isWelcomedToJoin(pActor) || !t.isSameIsland(pFromTile))
+                    {
+                        continue;
+                    }
+                    int free = 0;
+                    if (c.jobs != null)
+                    {
+                        foreach (KeyValuePair<CitizenJobAsset, int> kv in c.jobs.jobs)
+                        {
+                            free += Math.Max(0, kv.Value - c.jobs.countOccupied(kv.Key));
+                        }
+                    }
+                    float score = free * 10f - dist + (cKingdom == pActor.kingdom ? 100f : 0f);
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        best = c;
+                    }
+                }
+                __result = best;
+                return false;
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[CivMind] city target patch failed: " + e.Message);
+                return true;
+            }
         }
     }
 }

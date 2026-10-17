@@ -113,7 +113,9 @@ Every hook point, its mechanism, and its config gate:
 | `PatchIsWarNeeded` | `DiplomacyHelpers.isWarNeeded` | postfix (ref `__result`) | `KingPersonality`, `WarChest` | Pacifist veto / warlord bypass / treasury war funding |
 | `PatchSetKing` | `Kingdom.setKing` | postfix | `PretenderWars`, `CollapsePressure` | Pretender revolt / province drift |
 | `PatchPlotsInit` | `PlotsLibrary.init` | postfix | `AntiHegemon` | Wraps `alliance_destroy.check_is_possible` |
-| `PatchSupplyCities` | `CityBehSupplyKingdomCities.execute` | postfix | `WarTribute`, `SupplyWarMult` | Wartime tribute + faster aid |
+| `PatchSupplyCities` | `CityBehSupplyKingdomCities.execute` | prefix+postfix | `WarTribute`, `SupplyWarMult`, `FamineRelief` | Prefix retargets supply to hungriest city; postfix: wartime tribute + faster aid |
+| `PatchGiveTax` | `BehActorGiveTax.execute` | prefix+postfix | `TaxUnrest`, `Corruption` | Tax-rate happiness dip + `__state` king-loot diff skim to leader |
+| `PatchCityTarget` | `BehFindNearbyPotentialCivCityToJoin.getPotentialCityNearby` (static) | prefix-supplant | `LaborMigration` | Migrants pick cities by open job slots + kingdom + distance |
 | `PatchBorderSteal` | `CityBehBorderSteal.execute` | postfix | `BorderPressure` | Extra wartime zone steal |
 | `PatchBoatTrade` | `BehBoatMakeTrade.execute` | postfix | `TradeIncome` | Distance-scaled trade gold to boat inventory |
 | `PatchGiveItem` | `City.giveItem` (static) | prefix+postfix | `EquipmentMarket` | `__state` equipped-value diff → charge `money` → city gold |
@@ -158,6 +160,7 @@ null-checked invocation — if a game update renames a member, the patch degrade
 | `Actor.attack_target`, `Actor.has_attack_target` | field | `PatchArmyTick` (focus fire) |
 | `Actor.data` | field | `PatchArmyTick` (pillage — `ActorData.loot` set), `PatchIsWarNeeded` (war chest), `PatchGiveItem` (`ActorData.money`) |
 | `Actor.beh_building_target` | field | `PatchBoatTrade` (foreign dock for distance) |
+| `BaseSimObject.stats` → `BaseStats["multiplier_supply_timer"]` | field/indexer | `PatchSupplyCities` (replicated `updateSupplyTimer`) |
 | `BaseSimObject.addStatusEffect(string,float,bool)` | method | `PatchIncreaseKills` |
 | `Actor.getHit` | internal override | `PatchGetHit` (patched by name, `ref pDamage`) |
 | `City.kingdom` | field | `PatchEndWar`, `PatchCheckLoyalty` |

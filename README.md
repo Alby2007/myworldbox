@@ -48,7 +48,20 @@ armies rout when beaten, and wars actually end.
 - **Merit leaders** — cities are run by their best stewards
 - **Occupied-city uprisings** — unhappy recently-conquered cities can revolt into a rebellion war
 
-Every feature is toggleable/tunable in-game: **NML window → mod → Mod Configuration** (~50 options).
+### Realpolitik, economy & culture (v0.5)
+- **King personality** — pacifist kings veto wars; warlord kings declare with smaller armies
+- **Pretender wars** — a clearly-better rival seizes their city in a succession war
+- **Collapse pressure** — weak kings watch low-loyalty provinces drift away peacefully
+- **Anti-hegemon coalitions** — neighbours of the supreme kingdom ally to contain it
+- **War tribute & supply surge** — cities ship gold to the capital and resupply faster in wartime
+- **Siege starvation** — besieged cities slowly bleed stockpiled food
+- **Border pressure** — wartime cities grab empty frontier zones more aggressively
+- **Reconstruction surge** — post-war cities get bonus builders for a few years
+- **Holy wars** — different-religion kingdoms make juicier war targets
+- **Assimilation** — conquered cities gradually adopt the victor's culture and faith
+- **War exhaustion** — long wars make occupied (and unhappy) cities likelier to revolt
+
+Every feature is toggleable/tunable in-game: **NML window → mod → Mod Configuration** (~80 options).
 See [docs/config-reference.md](docs/config-reference.md) for the full list.
 
 ## Install

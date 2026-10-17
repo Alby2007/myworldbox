@@ -405,6 +405,18 @@
             "FloatVal": 0.6,
             "MinFloatVal": 0.2,
             "MaxFloatVal": 0.9
+        },
+        {
+            "Id": "BorderPressure",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "BorderPressureChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.35,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
         }
     ],
     "Politics": [
@@ -441,6 +453,129 @@
             "Id": "BalanceAlliances",
             "Type": "SWITCH",
             "BoolVal": true
+        },
+        {
+            "Id": "KingPersonality",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "PeaceKingDiplomacy",
+            "Type": "SLIDER",
+            "FloatVal": 10.0,
+            "MinFloatVal": 4.0,
+            "MaxFloatVal": 20.0
+        },
+        {
+            "Id": "PeaceVetoChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.5,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "WarlordWarfare",
+            "Type": "SLIDER",
+            "FloatVal": 12.0,
+            "MinFloatVal": 6.0,
+            "MaxFloatVal": 25.0
+        },
+        {
+            "Id": "WarlordChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.5,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "WarlordMinWarriors",
+            "Type": "SLIDER",
+            "FloatVal": 4.0,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 10.0
+        },
+        {
+            "Id": "AntiHegemon",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "HegemonBonusMult",
+            "Type": "SLIDER",
+            "FloatVal": 0.7,
+            "MinFloatVal": 0.3,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "PretenderWars",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "PretenderMargin",
+            "Type": "SLIDER",
+            "FloatVal": 8.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 30.0
+        },
+        {
+            "Id": "PretenderChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.35,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "CollapsePressure",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "CollapseChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.3,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "CollapseKingScore",
+            "Type": "SLIDER",
+            "FloatVal": 8.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 30.0
+        }
+    ],
+    "Culture": [
+        {
+            "Id": "HolyWars",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "HolyWarMult",
+            "Type": "SLIDER",
+            "FloatVal": 0.7,
+            "MinFloatVal": 0.3,
+            "MaxFloatVal": 1.5
+        },
+        {
+            "Id": "Assimilation",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "AssimilationChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.05,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 0.3
+        },
+        {
+            "Id": "CultureUprisingBonus",
+            "Type": "SLIDER",
+            "FloatVal": 10.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 30.0
         }
     ],
     "HomeFront": [
@@ -488,6 +623,86 @@
             "FloatVal": 0.02,
             "MinFloatVal": 0.0,
             "MaxFloatVal": 0.2
+        },
+        {
+            "Id": "WarTribute",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "TributePct",
+            "Type": "SLIDER",
+            "FloatVal": 30.0,
+            "MinFloatVal": 5.0,
+            "MaxFloatVal": 80.0
+        },
+        {
+            "Id": "TributeMinGold",
+            "Type": "SLIDER",
+            "FloatVal": 60.0,
+            "MinFloatVal": 10.0,
+            "MaxFloatVal": 300.0
+        },
+        {
+            "Id": "TributeChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.05,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 0.5
+        },
+        {
+            "Id": "SupplyWarMult",
+            "Type": "SLIDER",
+            "FloatVal": 0.5,
+            "MinFloatVal": 0.2,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "SiegeStarvation",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "SiegeFoodDrain",
+            "Type": "SLIDER",
+            "FloatVal": 2.0,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 10.0
+        },
+        {
+            "Id": "SiegeDrainChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.3,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "ReconBuilders",
+            "Type": "SLIDER",
+            "FloatVal": 2.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 8.0
+        },
+        {
+            "Id": "ReconYears",
+            "Type": "SLIDER",
+            "FloatVal": 8.0,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 30.0
+        },
+        {
+            "Id": "WarExhaustYears",
+            "Type": "SLIDER",
+            "FloatVal": 10.0,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 40.0
+        },
+        {
+            "Id": "WarExhaustMult",
+            "Type": "SLIDER",
+            "FloatVal": 2.0,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 5.0
         }
     ],
     "Debug": [

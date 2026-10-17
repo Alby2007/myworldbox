@@ -18,6 +18,7 @@ Vanilla background: [vanilla-ai-primer.md](vanilla-ai-primer.md) § "War & diplo
 
 v0.3 adds nine more features (15–23) riding a shared per-army tick — see **War Tactics** below.
 v0.4 adds ten more (24–33) — see **Politics, Battlefield Polish & Home Front**.
+v0.5 adds twelve more (35–46) — see **Realpolitik, Economy & Culture**.
 
 ## Where they land in the pipeline
 
@@ -297,4 +298,95 @@ leadership, `makeOwnKingdom` (internal → reflected) to secede, `startWar(oldK,
 WarTypeLibrary.rebellion)` (internal → reflected), `WorldLog.logCityRevolt`, and
 `checkMoreAlignedCities` so neighbouring unhappy cities can join the revolt — the same
 plumbing `DiplomacyHelpersRebellion.startRebellion` uses, minus its hard `Plot`
-requirement.
+requirement. In v0.5 this moved into the shared `Rebel` helper so other features
+(pretender wars, collapse drift) reuse it.
+
+---
+
+# Realpolitik, Economy & Culture (features 35–46)
+
+v0.5 deepens the political layer: kings shape foreign policy by their stats,
+succession crises spawn pretender revolts, wartime economies strain, and
+culture/religion starts to matter.
+
+## 35. King personality
+
+`isWarNeeded` postfix with `ref __result`. Vanilla only checks structural gates
+(warriors, timeout, population) — never who the king is.
+
+- **Pacifist veto** — a diplomatic king (`diplomacy ≥ PeaceKingDiplomacy` and
+  `diplomacy > warfare`) vetoes a `true` result with `PeaceVetoChance` probability.
+- **Warlord bypass** — a high-warfare king (`warfare ≥ WarlordWarfare`) reruns the
+  structural gates *minus* the army-size and 60%-population requirements with
+  `WarlordChance` — warlords declare with smaller forces (still ≥ `WarlordMinWarriors`).
+
+## 36. Anti-hegemon coalitions
+
+Two parts. In `PatchAllianceTarget`, when a `isSupreme` kingdom exists, candidates
+bordering it get `dist × HegemonBonusMult` — neighbours band together to contain
+the blob. And `Tuning.WrapPlots` (via `PatchPlotsInit`) relaxes `alliance_destroy`'s
+`check_is_possible`: vanilla requires the initiator be supreme/2nd-best *and* the
+alliance hold > 2× all rivals' power — the mod lets any member break a bloc that
+contains a supreme kingdom (10y membership/age floors kept).
+
+## 37. Pretender wars
+
+`Kingdom.setKing` postfix (`!pFromLoad`). After a coronation, the best non-capital
+city leader or royal-clan member whose merit score beats `king + PretenderMargin`
+seizes their city and launches a rebellion war — weak puppet kings invite coups.
+Uses `Rebel.SparkRevolt`.
+
+## 38. Collapse pressure
+
+Same hook, different outcome: if the new king's score is below `CollapseKingScore`
+and the kingdom has >2 cities, the lowest-loyalty non-capital city (loyalty < 40)
+simply leaves — `makeOwnKingdom(leader, pRebellion:false, pFellApart:true)` mirrors
+vanilla `checkKingdomChaos`, one province at a time instead of a full fracture.
+
+## 39. War tribute & supply surge
+
+`CityBehSupplyKingdomCities` postfix. During war: non-capital cities roll
+`TributeChance` to send `TributePct`% of their gold surplus (above `TributeMinGold`)
+to the capital — the war effort concentrates in the capital; and the shared-supply
+cooldown `timer_supply` is multiplied by `SupplyWarMult` (0.5 → aid runs ~2× as often).
+
+## 40. Siege starvation
+
+`PatchCheckLoyalty`: a city `isInDanger` rolls `SiegeDrainChance` per ~2s check →
+`getRandomStockpile().resources.getRandomFoodAsset()` → `takeResource(id,
+SiegeFoodDrain)`. Stockpiled food trickles out while enemies are inside the walls —
+long sieges starve the garrison, feeding the existing `hasAnyFood`/`hungry` systems.
+
+## 41. Border pressure
+
+`CityBehBorderSteal` postfix — during war, an extra `tryStealZone` attempt per
+`BorderPressureChance`: occupied frontier strips (empty zones only, same rule as
+vanilla — no stealing developed tiles) creep into enemy territory. `addZone`/
+`removeZone` are internal → reflected once.
+
+## 42. Reconstruction surge
+
+`PatchCitizenTasks` — a city whose kingdom's `WarFx.PeaceTime` is within
+`ReconYears` gets `ReconBuilders` extra builder slots. Peacetime rebuilds kick in
+the moment the war ends.
+
+## 43. Holy wars
+
+`PatchGetWarTarget` — different `Kingdom.religion` multiplies target score by
+`HolyWarMult` (0.7 → 30% more attractive). Faith borders get bloodier; same-faith
+neighbours get ignored more.
+
+## 44. Assimilation
+
+`PatchCheckLoyalty` — occupied cities (`timestamp_kingdom > created_time`, still
+within `UprisingRecentYears`) roll `AssimilationChance` to adopt the conqueror's
+`culture`/`religion` via reflected `setCulture`/`setReligion`. Conquest eventually
+settles: assimilated cities stop getting the foreign-culture unrest bonus.
+
+## 45–46. War exhaustion & foreign-culture unrest
+
+Inside the uprising check: kingdoms at war for ≥ `WarExhaustYears` (via
+`data.timestamp_last_war`) roll `UprisingChance × WarExhaustMult` — long wars rot
+the empire from inside. Cities whose `culture` differs from the kingdom's get
+`+CultureUprisingBonus` on the loyalty gate — a foreign-culture city at loyalty 38
+already qualifies when `UprisingLoyalty` is 30.

@@ -97,6 +97,8 @@ v0.3 features — attrition systems, duels/morale shock, naval & rage. See
 | `RallyFlee` | Routed warriors rally home | switch | on | — | Flee toward captain/own city, not random tiles |
 | `MilitiaReserve` | Peacetime militia reserve | switch | on | — | Cap peacetime warrior conversions |
 | `ReservePeacetimeRatio` | Peacetime army fill ratio | slider | 0.6 | 0.2–0.9 | Max `warriors_current/slots` while safe |
+| `BorderPressure` | Armies seize border zones | switch | on | — | Extra `tryStealZone` during war |
+| `BorderPressureChance` | Border steal chance | slider | 0.35 | 0–1 | Per-check roll for the extra steal |
 
 ## Politics
 
@@ -111,6 +113,20 @@ v0.4 features — succession, reparations, heroes, alliances. See
 | `WarHeroes` | War heroes get veteran trait | switch | on | — | Top wartime killer per side |
 | `HeroMinKills` | Min kills for war hero | slider | 3 | 1–20 | Wartime kills required |
 | `BalanceAlliances` | Regional alliance blocs | switch | on | — | Nearest-partner alliance picks |
+| `KingPersonality` | King personality shapes policy | switch | on | — | `isWarNeeded` veto/bypass by stats |
+| `PeaceKingDiplomacy` | Pacifist king diplomacy | slider | 10 | 4–20 | Diplomacy ≥ this + `diplomacy > warfare` = pacifist |
+| `PeaceVetoChance` | Pacifist war veto chance | slider | 0.5 | 0–1 | Per-check probability to suppress a war |
+| `WarlordWarfare` | Warlord king warfare | slider | 12 | 6–25 | Warfare ≥ this = warlord |
+| `WarlordChance` | Warlord war urge | slider | 0.5 | 0–1 | Chance to ignore size/pop war gates |
+| `WarlordMinWarriors` | Warlord min warriors | slider | 4 | 1–10 | Even warlords need this many |
+| `AntiHegemon` | Anti-hegemon coalitions | switch | on | — | Containment alliances + relaxed `alliance_destroy` |
+| `HegemonBonusMult` | Containment ally bonus | slider | 0.7 | 0.3–1.0 | Score × for supreme-adjacent candidates |
+| `PretenderWars` | Pretender succession wars | switch | on | — | Strong rivals seize cities on coronation |
+| `PretenderMargin` | Pretender score margin | slider | 8 | 0–30 | Score gap needed to revolt |
+| `PretenderChance` | Pretender war chance | slider | 0.35 | 0–1 | Per-coronation roll |
+| `CollapsePressure` | Weak kings lose provinces | switch | on | — | Peaceful secession of unhappy cities |
+| `CollapseChance` | Province drift chance | slider | 0.3 | 0–1 | Per-coronation roll under weak kings |
+| `CollapseKingScore` | Weak king threshold | slider | 8 | 0–30 | King merit score below this triggers drift |
 
 ## HomeFront
 
@@ -125,6 +141,30 @@ v0.4 features — refugees, leaders, uprisings. See [war-ai.md](war-ai.md) § Ho
 | `UprisingLoyalty` | Uprising loyalty threshold | slider | 30 | 10–60 | Loyalty below this is revolt-eligible |
 | `UprisingRecentYears` | Recent conquest window | slider | 10 | 2–30 | Years since capture that count as "occupied" |
 | `UprisingChance` | Uprising chance (per check) | slider | 0.02 | 0–0.2 | Per loyalty-check roll (~1%/s at 0.02) |
+| `WarTribute` | War tribute to capital | switch | on | — | Cities ship gold to capital during war |
+| `TributePct` | Tribute share of surplus (%) | slider | 30 | 5–80 | % of gold above the floor that ships |
+| `TributeMinGold` | Gold kept by city (floor) | slider | 60 | 10–300 | Cities never tribute below this |
+| `TributeChance` | Tribute chance (per check) | slider | 0.05 | 0–0.5 | Trickle rate (~5% per supply check) |
+| `SupplyWarMult` | Supply cooldown during war | slider | 0.5 | 0.2–1.0 | `timer_supply` × — faster aid in wartime |
+| `SiegeStarvation` | Besieged cities lose food | switch | on | — | `isInDanger` cities leak food stores |
+| `SiegeFoodDrain` | Food drained per tick | slider | 2 | 1–10 | Units of a random food resource |
+| `SiegeDrainChance` | Siege drain chance | slider | 0.3 | 0–1 | Per loyalty-check roll while in danger |
+| `ReconBuilders` | Post-war extra builders | slider | 2 | 0–8 | Extra `builder` slots during reconstruction |
+| `ReconYears` | Reconstruction window (years) | slider | 8 | 1–30 | Years after war-end the surge lasts |
+| `WarExhaustYears` | War exhaustion after (years) | slider | 10 | 1–40 | War age that starts boosting uprisings |
+| `WarExhaustMult` | Exhaustion uprising mult | slider | 2 | 1–5 | `UprisingChance` × during long wars |
+
+## Culture
+
+v0.5 features — religion-driven wars and occupied-city assimilation.
+
+| Id | Label | Type | Default | Range | Controls |
+|---|---|---|---|---|---|
+| `HolyWars` | Holy war targeting | switch | on | — | Different-religion targets score better |
+| `HolyWarMult` | Foreign-faith target appeal | slider | 0.7 | 0.3–1.5 | Score × for different-religion targets |
+| `Assimilation` | Occupied cities assimilate | switch | on | — | Conquered cities adopt culture/religion |
+| `AssimilationChance` | Assimilation chance (per check) | slider | 0.05 | 0–0.3 | Per loyalty-check roll while occupied |
+| `CultureUprisingBonus` | Foreign culture revolt ease | slider | 10 | 0–30 | Loyalty-gate bonus for foreign-culture cities |
 
 ## Debug
 

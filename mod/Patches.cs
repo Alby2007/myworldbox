@@ -266,6 +266,15 @@ namespace CivMindOverhaul
                 {
                     jobs.addToJob(CitizenJobLibrary.woodcutter, Cfg.ExtraWoodcutters);
                 }
+                if (Cfg.ReconBuilders > 0)
+                {
+                    Kingdom k = Rebel.Of(pCity);
+                    double peace;
+                    if (k != null && WarFx.PeaceTime.TryGetValue(k.id, out peace) && Date.getYearsSince(peace) < Cfg.ReconYears)
+                    {
+                        jobs.addToJob(CitizenJobLibrary.builder, (int)Cfg.ReconBuilders);
+                    }
+                }
             }
             catch (Exception e)
             {
@@ -428,6 +437,10 @@ namespace CivMindOverhaul
                         float score = Kingdom.distanceBetweenKingdom(pInitiatorKingdom, k)
                             * (0.4f + (float)def / Math.Max(1, own))
                             * (World.world.wars.hasWars(k) ? 0.6f : 1f);
+                        if (Cfg.HolyWars && pInitiatorKingdom.religion != null && k.religion != null && pInitiatorKingdom.religion != k.religion)
+                        {
+                            score *= Cfg.HolyWarMult;
+                        }
                         if (score < bestScore)
                         {
                             bestScore = score;
@@ -1172,6 +1185,18 @@ namespace CivMindOverhaul
                 {
                     return false;
                 }
+                Kingdom supreme = null;
+                if (Cfg.AntiHegemon)
+                {
+                    foreach (Kingdom sk in World.world.kingdoms)
+                    {
+                        if (sk.isSupreme() && sk.isAlive())
+                        {
+                            supreme = sk;
+                            break;
+                        }
+                    }
+                }
                 Kingdom best = null;
                 float bestDist = float.MaxValue;
                 ListPool<Kingdom> pool = World.world.wars.getNeutralKingdoms(pKingdomStarter, pOnlyWithoutWars: true, pOnlyWithoutAlliances: true);
@@ -1194,6 +1219,10 @@ namespace CivMindOverhaul
                             continue;
                         }
                         float dist = Kingdom.distanceBetweenKingdom(pKingdomStarter, k);
+                        if (supreme != null && k != supreme && DiplomacyHelpers.areKingdomsClose(k, supreme))
+                        {
+                            dist *= Cfg.HegemonBonusMult;
+                        }
                         if (dist < bestDist)
                         {
                             bestDist = dist;
@@ -1332,31 +1361,46 @@ namespace CivMindOverhaul
     [HarmonyPatch(typeof(CityBehCheckLoyalty), "execute")]
     internal static class PatchCheckLoyalty
     {
-        private static readonly MethodInfo _makeOwnKingdom = AccessTools.Method(typeof(City), "makeOwnKingdom", new Type[]
-        {
-            typeof(Actor),
-            typeof(bool),
-            typeof(bool)
-        });
-        private static readonly MethodInfo _startWar = AccessTools.Method(typeof(DiplomacyManager), "startWar", new Type[]
-        {
-            typeof(Kingdom),
-            typeof(Kingdom),
-            typeof(WarTypeAsset),
-            typeof(bool)
-        });
-        private static readonly FieldInfo _kingdom = AccessTools.Field(typeof(City), "kingdom");
-        private static readonly HashSet<long> _uprisingDone = new HashSet<long>();
-
         private static void Postfix(City pCity)
         {
-            if (!Cfg.Uprisings || _makeOwnKingdom == null || _startWar == null || _kingdom == null)
-            {
-                return;
-            }
             try
             {
-                if (_uprisingDone.Contains(pCity.id) || pCity.isCapitalCity())
+                if (pCity == null)
+                {
+                    return;
+                }
+                Kingdom k = Rebel.Of(pCity);
+                if (Cfg.SiegeStarvation && pCity.isInDanger() && pCity.hasStockpiles() && Randy.randomChance(Cfg.SiegeDrainChance))
+                {
+                    Building stockpile = pCity.getRandomStockpile();
+                    ResourceAsset food = stockpile == null ? null : stockpile.resources.getRandomFoodAsset();
+                    if (food != null)
+                    {
+                        pCity.takeResource(food.id, (int)Cfg.SiegeFoodDrain);
+                    }
+                }
+                if (k == null)
+                {
+                    return;
+                }
+                double occupiedSince = pCity.data.timestamp_kingdom;
+                bool occupied = pCity.data.timestamp_kingdom > pCity.data.created_time + 0.1 && Date.getYearsSince(occupiedSince) < Cfg.UprisingRecentYears;
+                if (Cfg.Assimilation && occupied && Randy.randomChance(Cfg.AssimilationChance))
+                {
+                    if (k.hasCulture() && pCity.culture != k.culture && Rebel.SetCulture != null)
+                    {
+                        Rebel.SetCulture.Invoke(pCity, new object[] { k.culture });
+                    }
+                    if (k.hasReligion() && pCity.religion != k.religion && Rebel.SetReligion != null)
+                    {
+                        Rebel.SetReligion.Invoke(pCity, new object[] { k.religion });
+                    }
+                }
+                if (!Cfg.Uprisings || Rebel.MakeOwnKingdom == null || Rebel.StartWar == null)
+                {
+                    return;
+                }
+                if (Rebel.Revolted.Contains(pCity.id) || pCity.isCapitalCity())
                 {
                     return;
                 }
@@ -1364,16 +1408,25 @@ namespace CivMindOverhaul
                 {
                     return;
                 }
-                if (pCity.getLoyalty() >= Cfg.UprisingLoyalty || Date.getYearsSince(pCity.data.timestamp_kingdom) >= Cfg.UprisingRecentYears)
+                if (!occupied || !k.isAlive() || k.isNeutral())
                 {
                     return;
                 }
-                Kingdom oldK = _kingdom.GetValue(pCity) as Kingdom;
-                if (oldK == null || !oldK.isAlive() || oldK.isNeutral())
+                float loyaltyGate = Cfg.UprisingLoyalty;
+                if (k.hasCulture() && pCity.culture != null && pCity.culture != k.culture)
+                {
+                    loyaltyGate += Cfg.CultureUprisingBonus;
+                }
+                if (pCity.getLoyalty() >= loyaltyGate)
                 {
                     return;
                 }
-                if (!Randy.randomChance(Cfg.UprisingChance))
+                float chance = Cfg.UprisingChance;
+                if (World.world.wars.hasWars(k) && Date.getYearsSince(k.data.timestamp_last_war) >= Cfg.WarExhaustYears)
+                {
+                    chance *= Cfg.WarExhaustMult;
+                }
+                if (!Randy.randomChance(chance))
                 {
                     return;
                 }
@@ -1391,36 +1444,331 @@ namespace CivMindOverhaul
                         }
                     }
                 }
-                if (rebel == null)
+                if (rebel != null)
                 {
-                    return;
-                }
-                _uprisingDone.Add(pCity.id);
-                if (rebel.isCityLeader())
-                {
-                    pCity.removeLeader();
-                }
-                Kingdom newK = _makeOwnKingdom.Invoke(pCity, new object[] { rebel, true, false }) as Kingdom;
-                if (newK != null)
-                {
-                    _startWar.Invoke(World.world.diplomacy, new object[] { oldK, newK, WarTypeLibrary.rebellion, true });
-                    WorldLog.logCityRevolt(pCity);
-                    UnityEngine.Debug.Log("[CivMind] uprising: " + pCity.name + " revolts against " + oldK.name);
-                    ListPool<City> pool = new ListPool<City>();
-                    try
-                    {
-                        pool.Add(pCity);
-                        DiplomacyHelpersRebellion.checkMoreAlignedCities(newK, oldK, pool, true);
-                    }
-                    finally
-                    {
-                        pool.Dispose();
-                    }
+                    Rebel.SparkRevolt(pCity, k, rebel);
                 }
             }
             catch (Exception e)
             {
                 UnityEngine.Debug.LogWarning("[CivMind] uprising patch failed: " + e.Message);
+            }
+        }
+    }
+
+    internal static class Rebel
+    {
+        internal static readonly MethodInfo MakeOwnKingdom = AccessTools.Method(typeof(City), "makeOwnKingdom", new Type[]
+        {
+            typeof(Actor),
+            typeof(bool),
+            typeof(bool)
+        });
+        internal static readonly MethodInfo StartWar = AccessTools.Method(typeof(DiplomacyManager), "startWar", new Type[]
+        {
+            typeof(Kingdom),
+            typeof(Kingdom),
+            typeof(WarTypeAsset),
+            typeof(bool)
+        });
+        internal static readonly FieldInfo CityKingdom = AccessTools.Field(typeof(City), "kingdom");
+        internal static readonly MethodInfo SetCulture = AccessTools.Method(typeof(City), "setCulture", new Type[] { typeof(Culture) });
+        internal static readonly MethodInfo SetReligion = AccessTools.Method(typeof(City), "setReligion", new Type[] { typeof(Religion) });
+        internal static readonly HashSet<long> Revolted = new HashSet<long>();
+
+        internal static Kingdom Of(City pCity)
+        {
+            return pCity == null || CityKingdom == null ? null : CityKingdom.GetValue(pCity) as Kingdom;
+        }
+
+        internal static Kingdom SparkRevolt(City pCity, Kingdom pOldK, Actor pRebel)
+        {
+            if (MakeOwnKingdom == null || StartWar == null || pRebel == null || pRebel.isRekt())
+            {
+                return null;
+            }
+            Revolted.Add(pCity.id);
+            if (pRebel.isCityLeader())
+            {
+                pCity.removeLeader();
+            }
+            Kingdom newK = MakeOwnKingdom.Invoke(pCity, new object[] { pRebel, true, false }) as Kingdom;
+            if (newK != null)
+            {
+                StartWar.Invoke(World.world.diplomacy, new object[] { pOldK, newK, WarTypeLibrary.rebellion, true });
+                WorldLog.logCityRevolt(pCity);
+                UnityEngine.Debug.Log("[CivMind] revolt: " + pCity.name + " breaks from " + pOldK.name + " under " + pRebel.getName());
+                ListPool<City> pool = new ListPool<City>();
+                try
+                {
+                    pool.Add(pCity);
+                    DiplomacyHelpersRebellion.checkMoreAlignedCities(newK, pOldK, pool, true);
+                }
+                finally
+                {
+                    pool.Dispose();
+                }
+            }
+            return newK;
+        }
+
+        internal static void FellApart(City pCity, Actor pLeader)
+        {
+            if (MakeOwnKingdom == null || pLeader == null || pLeader.isRekt())
+            {
+                return;
+            }
+            Revolted.Add(pCity.id);
+            if (pLeader.isCityLeader())
+            {
+                pCity.removeLeader();
+            }
+            if (MakeOwnKingdom.Invoke(pCity, new object[] { pLeader, false, true }) is Kingdom)
+            {
+                UnityEngine.Debug.Log("[CivMind] province drift: " + pCity.name + " leaves the realm");
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(DiplomacyHelpers), "isWarNeeded")]
+    internal static class PatchIsWarNeeded
+    {
+        private static void Postfix(Kingdom pKingdom, ref bool __result)
+        {
+            if (!Cfg.KingPersonality || pKingdom == null || !pKingdom.hasKing())
+            {
+                return;
+            }
+            try
+            {
+                Actor king = pKingdom.king;
+                if (king == null)
+                {
+                    return;
+                }
+                if (__result)
+                {
+                    if (king.diplomacy >= Cfg.PeaceKingDiplomacy && king.warfare < king.diplomacy && Randy.randomChance(Cfg.PeaceVetoChance))
+                    {
+                        __result = false;
+                    }
+                }
+                else if (king.warfare >= Cfg.WarlordWarfare
+                    && Randy.randomChance(Cfg.WarlordChance)
+                    && pKingdom.hasCities() && pKingdom.hasCapital()
+                    && !World.world.wars.hasWars(pKingdom)
+                    && pKingdom.countTotalWarriors() >= Cfg.WarlordMinWarriors
+                    && (pKingdom.data.timestamp_last_war == -1.0 || Date.getYearsSince(pKingdom.data.timestamp_last_war) > (double)SimGlobals.m.diplomacy_years_war_timeout))
+                {
+                    __result = true;
+                }
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Kingdom), "setKing")]
+    internal static class PatchSetKing
+    {
+        private static void Postfix(Kingdom __instance, Actor pActor, bool pFromLoad)
+        {
+            if (pFromLoad || pActor == null || __instance == null)
+            {
+                return;
+            }
+            try
+            {
+                if (!WorldLawLibrary.world_law_rebellions.isEnabled() || __instance.countCities() <= 1)
+                {
+                    return;
+                }
+                float kingScore = PatchSuccessionClan.Score(pActor);
+                if (Cfg.PretenderWars && Randy.randomChance(Cfg.PretenderChance))
+                {
+                    Actor pretender = FindPretender(__instance, pActor, kingScore + Cfg.PretenderMargin);
+                    if (pretender != null && pretender.city != null && !pretender.city.isCapitalCity() && Rebel.Of(pretender.city) == __instance)
+                    {
+                        Rebel.SparkRevolt(pretender.city, __instance, pretender);
+                        return;
+                    }
+                }
+                if (Cfg.CollapsePressure && kingScore < Cfg.CollapseKingScore && __instance.countCities() > 2 && Randy.randomChance(Cfg.CollapseChance))
+                {
+                    City worst = null;
+                    float worstLoyalty = 40f;
+                    foreach (City c in __instance.getCities())
+                    {
+                        if (c.isCapitalCity() || !c.hasLeader())
+                        {
+                            continue;
+                        }
+                        float loyalty = c.getLoyalty();
+                        if (loyalty < worstLoyalty)
+                        {
+                            worstLoyalty = loyalty;
+                            worst = c;
+                        }
+                    }
+                    if (worst != null)
+                    {
+                        Rebel.FellApart(worst, worst.leader);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[CivMind] succession events failed: " + e.Message);
+            }
+        }
+
+        private static Actor FindPretender(Kingdom pKingdom, Actor pKing, float pMinScore)
+        {
+            Actor best = null;
+            float bestScore = pMinScore;
+            foreach (City c in pKingdom.getCities())
+            {
+                if (c.isCapitalCity() || !c.hasLeader())
+                {
+                    continue;
+                }
+                Actor u = c.leader;
+                if (u == null || u == pKing || u.isRekt())
+                {
+                    continue;
+                }
+                float s = PatchSuccessionClan.Score(u);
+                if (s > bestScore)
+                {
+                    bestScore = s;
+                    best = u;
+                }
+            }
+            if (pKingdom.data.royal_clan_id.hasValue())
+            {
+                Clan clan = World.world.clans.get(pKingdom.data.royal_clan_id);
+                if (clan != null)
+                {
+                    for (int i = 0; i < clan.units.Count; i++)
+                    {
+                        Actor u = clan.units[i];
+                        if (u == null || u == pKing || u.isRekt() || u.city == null || u.city.isCapitalCity())
+                        {
+                            continue;
+                        }
+                        float s = PatchSuccessionClan.Score(u);
+                        if (s > bestScore)
+                        {
+                            bestScore = s;
+                            best = u;
+                        }
+                    }
+                }
+            }
+            return best;
+        }
+    }
+
+    [HarmonyPatch(typeof(PlotsLibrary), "init")]
+    internal static class PatchPlotsInit
+    {
+        private static void Postfix()
+        {
+            try
+            {
+                Tuning.WrapPlots();
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(CityBehSupplyKingdomCities), "execute")]
+    internal static class PatchSupplyCities
+    {
+        private static void Postfix(City pCity)
+        {
+            if ((!Cfg.WarTribute && Cfg.SupplyWarMult >= 1f) || pCity == null)
+            {
+                return;
+            }
+            try
+            {
+                Kingdom k = Rebel.Of(pCity);
+                if (k == null || !World.world.wars.hasWars(k))
+                {
+                    return;
+                }
+                if (Cfg.WarTribute && k.hasCapital() && !pCity.isCapitalCity() && Randy.randomChance(Cfg.TributeChance))
+                {
+                    int gold = pCity.getResourcesAmount("gold");
+                    int surplus = gold - (int)Cfg.TributeMinGold;
+                    if (surplus > 0)
+                    {
+                        int send = (int)(surplus * Cfg.TributePct / 100f);
+                        if (send > 0)
+                        {
+                            pCity.takeResource("gold", send);
+                            k.capital.addResourcesToRandomStockpile("gold", send);
+                        }
+                    }
+                }
+                if (Cfg.SupplyWarMult < 1f && pCity.data.timer_supply > 0f)
+                {
+                    pCity.data.timer_supply *= Cfg.SupplyWarMult;
+                }
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(CityBehBorderSteal), "execute")]
+    internal static class PatchBorderSteal
+    {
+        private static readonly MethodInfo _addZone = AccessTools.Method(typeof(City), "addZone", new Type[] { typeof(TileZone) });
+        private static readonly MethodInfo _removeZone = AccessTools.Method(typeof(City), "removeZone", new Type[] { typeof(TileZone) });
+
+        private static void Postfix(City pCity)
+        {
+            if (!Cfg.BorderPressure || _addZone == null || _removeZone == null || pCity == null)
+            {
+                return;
+            }
+            try
+            {
+                if (!Randy.randomChance(Cfg.BorderPressureChance) || !WorldLawLibrary.world_law_border_stealing.isEnabled()
+                    || pCity.status.population == 0 || pCity.buildings.Count == 0)
+                {
+                    return;
+                }
+                Kingdom mine = Rebel.Of(pCity);
+                if (mine == null || !World.world.wars.hasWars(mine))
+                {
+                    return;
+                }
+                TileZone[] neighbours = pCity.buildings.GetRandom().current_tile.zone.neighbours;
+                for (int i = 0; i < neighbours.Length; i++)
+                {
+                    TileZone z = neighbours[i];
+                    if (z.city == null || z.city == pCity || z.hasAnyBuildingsInSet(BuildingList.Civs))
+                    {
+                        continue;
+                    }
+                    Kingdom theirs = Rebel.Of(z.city);
+                    if (theirs != null && theirs.isEnemy(mine))
+                    {
+                        _removeZone.Invoke(z.city, new object[] { z });
+                        _addZone.Invoke(pCity, new object[] { z });
+                        return;
+                    }
+                }
+            }
+            catch
+            {
             }
         }
     }

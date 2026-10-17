@@ -13,6 +13,7 @@ namespace CivMindOverhaul
         private static readonly Dictionary<string, float> _origWeight = new Dictionary<string, float>();
         private static readonly Dictionary<string, int> _origCooldown = new Dictionary<string, int>();
         private static readonly Dictionary<string, DecisionActionWeight> _origCustom = new Dictionary<string, DecisionActionWeight>();
+        private static PlotCheckerDelegate _origAllianceDestroyCheck;
 
         public static void TryApply()
         {
@@ -77,6 +78,7 @@ namespace CivMindOverhaul
             {
                 ReworkRetreat("run_away");
             }
+            WrapPlots();
         }
 
         private static void Retune(string pId, float pWeightMult, float pCooldownMult, bool pDemandAware = false)
@@ -204,6 +206,57 @@ namespace CivMindOverhaul
             {
             }
             return 1f;
+        }
+
+        internal static void WrapPlots()
+        {
+            if (!Cfg.AntiHegemon || _origAllianceDestroyCheck != null)
+            {
+                return;
+            }
+            PlotAsset destroy = AssetManager.plots_library == null ? null : AssetManager.plots_library.get("alliance_destroy") as PlotAsset;
+            if (destroy == null || destroy.check_is_possible == null)
+            {
+                return;
+            }
+            _origAllianceDestroyCheck = destroy.check_is_possible;
+            PlotCheckerDelegate orig = _origAllianceDestroyCheck;
+            destroy.check_is_possible = delegate(Actor a)
+            {
+                if (orig(a))
+                {
+                    return true;
+                }
+                try
+                {
+                    Kingdom k = a.kingdom;
+                    if (k == null || !k.hasAlliance() || k.hasEnemies())
+                    {
+                        return false;
+                    }
+                    Alliance al = k.getAlliance();
+                    if (al == null || al.isForcedType() || al.getAge() < 10)
+                    {
+                        return false;
+                    }
+                    if (Date.getYearsSince(al.data.timestamp_member_joined) < 10.0)
+                    {
+                        return false;
+                    }
+                    foreach (Kingdom m in al.kingdoms_hashset)
+                    {
+                        if (m.isSupreme())
+                        {
+                            return true;
+                        }
+                    }
+                }
+                catch
+                {
+                }
+                return false;
+            };
+            Log("wrapped alliance_destroy: members may break hegemon blocs");
         }
 
         private static void ReworkRetreat(string pId)

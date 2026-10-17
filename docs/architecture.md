@@ -109,7 +109,12 @@ Every hook point, its mechanism, and its config gate:
 | `PatchFlee` | `BehFindRandomFarTile.execute` | prefix | `RallyFlee` | Flee toward captain / own city |
 | `PatchTryWarrior` | `City.tryToMakeWarrior` | prefix | `MilitiaReserve` | Peacetime warrior fill cap |
 | `PatchSetLeader` | `City.setLeader` | prefix (ref `pActor`) | `MeritLeaders` | Stewardship-scored leader swap |
-| `PatchCheckLoyalty` | `CityBehCheckLoyalty.execute` | postfix | `Uprisings` | Occupied-city rebellion trigger |
+| `PatchCheckLoyalty` | `CityBehCheckLoyalty.execute` | postfix | `Uprisings`, `SiegeStarvation`, `Assimilation` | Uprising trigger + siege food drain + culture/religion conversion |
+| `PatchIsWarNeeded` | `DiplomacyHelpers.isWarNeeded` | postfix (ref `__result`) | `KingPersonality` | Pacifist veto / warlord bypass |
+| `PatchSetKing` | `Kingdom.setKing` | postfix | `PretenderWars`, `CollapsePressure` | Pretender revolt / province drift |
+| `PatchPlotsInit` | `PlotsLibrary.init` | postfix | `AntiHegemon` | Wraps `alliance_destroy.check_is_possible` |
+| `PatchSupplyCities` | `CityBehSupplyKingdomCities.execute` | postfix | `WarTribute`, `SupplyWarMult` | Wartime tribute + faster aid |
+| `PatchBorderSteal` | `CityBehBorderSteal.execute` | postfix | `BorderPressure` | Extra wartime zone steal |
 
 Plus tuning-only features with no dedicated patch class (see `Tuning.Apply`):
 `find_city_job` demand weight, expansion/social/reproduction weights, housing-gated
@@ -120,8 +125,13 @@ commander aura), `warrior_train_with_dummy`, `check_warrior_transport` retunes, 
 `WarFx` (in `Patches.cs`) is a tiny shared-state holder: `Shaken: armyId → Time.time` expiry,
 written by `PatchArmyTick` on field captain-death and read by the `run_away` delegate;
 `HeroKills: actorId → wartime kill count`, fed by `PatchIncreaseKills` and consumed by
-`PatchEndWar`; `PeaceTime: kingdomId → world time of last war end`, bookkeeping for future
-reconstruction logic.
+`PatchEndWar`; `PeaceTime: kingdomId → world time of last war end`, read by
+`PatchCitizenTasks` for the reconstruction surge.
+
+`Rebel` (in `Patches.cs`) holds the shared rebellion plumbing — reflected `makeOwnKingdom`,
+`startWar`, `City.kingdom`, `setCulture`, `setReligion` handles plus the once-per-city
+`Revolted` set — used by `PatchCheckLoyalty` (occupied uprisings), `PatchSetKing`
+(pretender wars / province drift), and `PatchBorderSteal` (kingdom lookups).
 
 ## Reflection access
 
@@ -146,7 +156,9 @@ null-checked invocation — if a game update renames a member, the patch degrade
 | `City.kingdom` | field | `PatchEndWar`, `PatchCheckLoyalty` |
 | `City.zones` | field | `PatchFlee` (rally fallback target) |
 | `Actor.beh_tile_target` | field | `PatchFlee` |
-| `City.makeOwnKingdom` | method | `PatchCheckLoyalty` (secession) |
-| `DiplomacyManager.startWar` | method | `PatchCheckLoyalty` (rebellion war) |
+| `City.makeOwnKingdom` | method | `Rebel` (secession — uprisings, pretenders, drift) |
+| `DiplomacyManager.startWar` | method | `Rebel` (rebellion wars) |
+| `City.setCulture`, `City.setReligion` | method | `PatchCheckLoyalty` (assimilation) |
+| `City.addZone`, `City.removeZone` | method | `PatchBorderSteal` (zone grab) |
 
 See [patching-guide.md](patching-guide.md) for the conventions in detail.

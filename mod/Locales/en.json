@@ -151,6 +151,12 @@
     "GoldenAgeYears": "Peace years for golden age",
     "GoldenAgeMult": "Golden age crafting (x)",
     "GoldenAgeBuilders": "Golden age extra builders",
+    "Mercenaries": "Cities hire nomad mercenaries",
+    "MercenaryChance": "Mercenary enlist chance",
+    "MercenaryCost": "Mercenary signing bonus (gold)",
+    "Embargo": "Alliances embargo enemy docks",
+    "WarProfiteer": "Neutrals trade more during wars",
+    "WarProfiteerMult": "War profiteer trade (x)",
     "Debug": "Debug",
     "LogTuning": "Log tuning to Player.log"
 }

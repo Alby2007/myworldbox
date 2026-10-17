@@ -168,7 +168,7 @@ v0.5 features — religion-driven wars and occupied-city assimilation.
 
 ## Economy
 
-v0.6–v0.8 features — loot/tax economy, item production, trade boats, plunder incentives, wages, unrest/corruption, triage logistics, golden ages.
+v0.6–v0.9 features — loot/tax economy, item production, trade boats, plunder incentives, wages, unrest/corruption, triage logistics, golden ages, mercenaries, embargoes, profiteering.
 
 | Id | Label | Type | Default | Range | Controls |
 |---|---|---|---|---|---|
@@ -208,6 +208,12 @@ v0.6–v0.8 features — loot/tax economy, item production, trade boats, plunder
 | `GoldenAgeYears` | Peace years for golden age | slider | 15 | 1–60 | `Rebel.PeaceYears` threshold |
 | `GoldenAgeMult` | Golden age crafting (x) | slider | 1.5 | 1–4 | `make_items` weight × while at peace |
 | `GoldenAgeBuilders` | Golden age extra builders | slider | 1 | 0–5 | Extra builder slots during golden age |
+| `Mercenaries` | Cities hire nomad mercenaries | switch | on | — | Join-city migrants can be bought into armies |
+| `MercenaryChance` | Mercenary enlist chance | slider | 0.35 | 0–1 | Roll per migrant joining |
+| `MercenaryCost` | Mercenary signing bonus (gold) | slider | 15 | 0–100 | City gold → migrant `money` on enlist |
+| `Embargo` | Alliances embargo enemy docks | switch | on | — | Trade boats skip docks at war with any ally |
+| `WarProfiteer` | Neutrals trade more during wars | switch | on | — | Peaceful boats × while wars rage |
+| `WarProfiteerMult` | War profiteer trade (x) | slider | 1.75 | 1–4 | `boat_trading` weight × for neutrals |
 
 ## Debug
 

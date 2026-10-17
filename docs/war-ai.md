@@ -22,6 +22,7 @@ v0.5 adds twelve more (35–46) — see **Realpolitik, Economy & Culture**.
 v0.6 adds the economy pack (48–51) — see **Economy & Logistics**.
 v0.7 deepens it (52–56): plunder-driven targeting, crown loot tax, soldier wages, trade-run income, and an equipment market.
 v0.8 closes the loop (57–61): tax unrest, corruption, famine relief, labor migration, golden-age economies.
+v0.9 adds deeper plays (62–64): paid mercenaries, alliance embargoes, war profiteering.
 
 ## Where they land in the pipeline
 
@@ -505,3 +506,26 @@ Kingdoms at peace ≥ `GoldenAgeYears` (15y — via `Rebel.PeaceYears`, using
 `timestamp_last_war` or kingdom age for never-at-war realms) get `make_items`
 weight × `GoldenAgeMult` (1.5) and +`GoldenAgeBuilders` builder slots via
 `PatchCitizenTasks`. Peaceful kingdoms craft and build faster — patience pays.
+
+## 62. Mercenaries
+
+`PatchMercenary` postfix on `Actor.joinCity`: when a homeless adult civ migrant
+joins a city, `MercenaryChance` rolls — the city pays `MercenaryCost` (15g) from
+its stockpile straight into the migrant's `money`, then invokes the reflected
+`tryToMakeWarrior` to enlist them immediately. Kings literally buy soldiers from
+the nomad pool — a standing army funded by gold, not population growth.
+
+## 63. Embargo escalation
+
+Vanilla `getDockTradeTarget` already refuses *direct* enemy docks.
+`PatchDockTarget` postfix extends it alliance-wide: if the candidate dock's
+kingdom is at war with **any** member of the boat's alliance, the target is
+nulled — the run aborts and enemy docks get no traffic at all. Collective
+economic siege as a war layer.
+
+## 64. War profiteers
+
+`boat_trading`'s weight wrap composes blockade × profiteer: a boat whose kingdom
+is at peace while `World.world.wars.getActiveWars()` is non-empty gets
+`× WarProfiteerMult` (1.75) — neutral docks flood both belligerents' markets and
+skim the trade income (52) while empires bleed.

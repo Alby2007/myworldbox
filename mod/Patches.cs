@@ -2167,4 +2167,85 @@ namespace CivMindOverhaul
             }
         }
     }
+
+    [HarmonyPatch(typeof(Actor), "joinCity")]
+    internal static class PatchMercenary
+    {
+        private static readonly MethodInfo _tryWarrior = AccessTools.Method(typeof(City), "tryToMakeWarrior", new Type[] { typeof(Actor) });
+
+        private static void Postfix(Actor __instance, City pCity)
+        {
+            if (!Cfg.Mercenaries || __instance == null || pCity == null || _tryWarrior == null)
+            {
+                return;
+            }
+            try
+            {
+                Actor a = __instance;
+                if (a.asset == null || a.asset.is_boat || !a.isKingdomCiv() || !a.isAlive() || !a.isAdult()
+                    || a.isWarrior() || a.isKing() || a.isCityLeader())
+                {
+                    return;
+                }
+                if (!Randy.randomChance(Cfg.MercenaryChance) || pCity.getResourcesAmount("gold") < Cfg.MercenaryCost)
+                {
+                    return;
+                }
+                pCity.takeResource("gold", (int)Cfg.MercenaryCost);
+                a.addMoney((int)Cfg.MercenaryCost);
+                if (_tryWarrior.Invoke(pCity, new object[] { a }) is bool ok && ok)
+                {
+                    UnityEngine.Debug.Log("[CivMind] mercenary: " + a.getName() + " enlisted in " + pCity.name + " for " + (int)Cfg.MercenaryCost + " gold");
+                }
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[CivMind] mercenary patch failed: " + e.Message);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(ai.ActorTool), "getDockTradeTarget", new Type[] { typeof(Actor) })]
+    internal static class PatchDockTarget
+    {
+        private static readonly FieldInfo _dockBuilding = AccessTools.Field(typeof(BaseBuildingComponent), "building");
+
+        private static void Postfix(Actor pActor, ref Docks __result)
+        {
+            if (!Cfg.Embargo || __result == null || pActor == null || pActor.kingdom == null || _dockBuilding == null)
+            {
+                return;
+            }
+            try
+            {
+                Kingdom mine = pActor.kingdom;
+                if (!mine.hasAlliance())
+                {
+                    return;
+                }
+                Building b = _dockBuilding.GetValue(__result) as Building;
+                Kingdom theirs = b == null ? null : Rebel.Of(b.city);
+                if (theirs == null || theirs == mine)
+                {
+                    return;
+                }
+                Alliance alliance = mine.getAlliance();
+                if (alliance == null || alliance.kingdoms_hashset == null)
+                {
+                    return;
+                }
+                foreach (Kingdom member in alliance.kingdoms_hashset)
+                {
+                    if (member != null && member != mine && member.isAlive() && theirs.isEnemy(member))
+                    {
+                        __result = null;
+                        return;
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+    }
 }

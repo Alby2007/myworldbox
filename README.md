@@ -76,6 +76,9 @@ armies rout when beaten, and wars actually end.
 - **Famine relief** — kingdom supply runs go to the hungriest city, not a random one
 - **Labor migration** — homeless migrants pick cities with open jobs
 - **Golden age** — kingdoms at peace for years craft faster and get bonus builders
+- **Mercenaries** — cities pay gold signing bonuses to arm migrant drifters
+- **Embargoes** — alliance members' boats boycott any ally's enemy docks
+- **War profiteers** — neutral dock cities trade harder while others bleed
 
 Every feature is toggleable/tunable in-game: **NML window → mod → Mod Configuration** (~105 options).
 See [docs/config-reference.md](docs/config-reference.md) for the full list.

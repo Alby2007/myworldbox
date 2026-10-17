@@ -77,7 +77,7 @@ namespace CivMindOverhaul
             Retune("give_tax", Cfg.TaxWeight, Cfg.TaxCooldown);
             RetuneMult("make_items", Cfg.ItemCraftWeight, Cfg.ItemCraftCooldown, GoldenAgeMult);
             RetuneMult("try_to_take_city_item", Cfg.ItemArmWeight, Cfg.ItemArmCooldown, DangerArmMult);
-            RetuneMult("boat_trading", Cfg.TradeWeight, 1f, BlockadeMult);
+            RetuneMult("boat_trading", Cfg.TradeWeight, 1f, BoatTradeMult);
             Retune("boat_fishing", Cfg.TradeWeight, 1f);
             if (Cfg.MoraleRetreat)
             {
@@ -113,6 +113,37 @@ namespace CivMindOverhaul
             {
             }
             return 1f;
+        }
+
+        private static float BoatTradeMult(Actor a)
+        {
+            float m = BlockadeMult(a);
+            if (m < 1f || !Cfg.WarProfiteer)
+            {
+                return m;
+            }
+            try
+            {
+                Kingdom k = a.kingdom;
+                if (k == null)
+                {
+                    k = Rebel.Of(a.city);
+                }
+                if (k != null && !World.world.wars.hasWars(k))
+                {
+                    using (IEnumerator<War> e = World.world.wars.getActiveWars().GetEnumerator())
+                    {
+                        if (e.MoveNext())
+                        {
+                            return m * Cfg.WarProfiteerMult;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+            }
+            return m;
         }
 
         private static float BlockadeMult(Actor a)

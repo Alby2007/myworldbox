@@ -148,6 +148,12 @@ namespace CivMindOverhaul
         public static float GoldenAgeYears = 15f;
         public static float GoldenAgeMult = 1.5f;
         public static float GoldenAgeBuilders = 1f;
+        public static bool Mercenaries = true;
+        public static float MercenaryChance = 0.35f;
+        public static float MercenaryCost = 15f;
+        public static bool Embargo = true;
+        public static bool WarProfiteer = true;
+        public static float WarProfiteerMult = 1.75f;
         public static bool LogTuning = true;
 
         public static void Load(ModConfig pCfg)
@@ -300,6 +306,12 @@ namespace CivMindOverhaul
             GoldenAgeYears = Slider(pCfg, "Economy", "GoldenAgeYears", GoldenAgeYears);
             GoldenAgeMult = Slider(pCfg, "Economy", "GoldenAgeMult", GoldenAgeMult);
             GoldenAgeBuilders = Slider(pCfg, "Economy", "GoldenAgeBuilders", GoldenAgeBuilders);
+            Mercenaries = Switch(pCfg, "Economy", "Mercenaries", Mercenaries);
+            MercenaryChance = Slider(pCfg, "Economy", "MercenaryChance", MercenaryChance);
+            MercenaryCost = Slider(pCfg, "Economy", "MercenaryCost", MercenaryCost);
+            Embargo = Switch(pCfg, "Economy", "Embargo", Embargo);
+            WarProfiteer = Switch(pCfg, "Economy", "WarProfiteer", WarProfiteer);
+            WarProfiteerMult = Slider(pCfg, "Economy", "WarProfiteerMult", WarProfiteerMult);
             LogTuning = Switch(pCfg, "Debug", "LogTuning", LogTuning);
         }
 

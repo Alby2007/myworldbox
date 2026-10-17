@@ -1,8 +1,8 @@
 {
     "name": "Civ Mind Overhaul",
     "author": "alber",
-    "version": "0.8.0",
-    "description": "Gameplay overhaul for civ and war AI: demand-driven jobs, aptitude hiring, militia drafts, morale retreats, merit captains, smart war/siege targets, warscore surrender, focus fire, desertion, pillage, duels, morale shock, naval invasions, berserker rage, merit succession, reparations, war heroes, regional alliances, commander aura, rally flee, militia reserve, refugees, merit leaders, uprisings, king personality, pretender wars, kingdom collapse, anti-hegemon coalitions, war tribute, siege starvation, border pressure, reconstruction, holy wars, assimilation, war exhaustion, war chests, rich-target plunder, loot tax, soldier wages, trade income, equipment market, tax unrest, corruption, famine relief, labor migration, golden ages.",
+    "version": "0.9.0",
+    "description": "Gameplay overhaul for civ and war AI: demand-driven jobs, aptitude hiring, militia drafts, morale retreats, merit captains, smart war/siege targets, warscore surrender, focus fire, desertion, pillage, duels, morale shock, naval invasions, berserker rage, merit succession, reparations, war heroes, regional alliances, commander aura, rally flee, militia reserve, refugees, merit leaders, uprisings, king personality, pretender wars, kingdom collapse, anti-hegemon coalitions, war tribute, siege starvation, border pressure, reconstruction, holy wars, assimilation, war exhaustion, war chests, rich-target plunder, loot tax, soldier wages, trade income, equipment market, tax unrest, corruption, famine relief, labor migration, golden ages, mercenaries, alliance embargoes, war profiteering.",
     "GUID": "devin.civmind",
     "targetGameBuild": 719,
     "Dependencies": [],

@@ -116,6 +116,8 @@ Every hook point, its mechanism, and its config gate:
 | `PatchSupplyCities` | `CityBehSupplyKingdomCities.execute` | prefix+postfix | `WarTribute`, `SupplyWarMult`, `FamineRelief` | Prefix retargets supply to hungriest city; postfix: wartime tribute + faster aid |
 | `PatchGiveTax` | `BehActorGiveTax.execute` | prefix+postfix | `TaxUnrest`, `Corruption` | Tax-rate happiness dip + `__state` king-loot diff skim to leader |
 | `PatchCityTarget` | `BehFindNearbyPotentialCivCityToJoin.getPotentialCityNearby` (static) | prefix-supplant | `LaborMigration` | Migrants pick cities by open job slots + kingdom + distance |
+| `PatchMercenary` | `Actor.joinCity` | postfix | `Mercenaries` | City pays `MercenaryCost` → migrant `money` → `tryToMakeWarrior` |
+| `PatchDockTarget` | `ai.ActorTool.getDockTradeTarget` (static) | postfix (ref `__result`) | `Embargo` | Nulls docks whose kingdom is at war with any alliance member |
 | `PatchBorderSteal` | `CityBehBorderSteal.execute` | postfix | `BorderPressure` | Extra wartime zone steal |
 | `PatchBoatTrade` | `BehBoatMakeTrade.execute` | postfix | `TradeIncome` | Distance-scaled trade gold to boat inventory |
 | `PatchGiveItem` | `City.giveItem` (static) | prefix+postfix | `EquipmentMarket` | `__state` equipped-value diff → charge `money` → city gold |
@@ -161,6 +163,8 @@ null-checked invocation — if a game update renames a member, the patch degrade
 | `Actor.data` | field | `PatchArmyTick` (pillage — `ActorData.loot` set), `PatchIsWarNeeded` (war chest), `PatchGiveItem` (`ActorData.money`) |
 | `Actor.beh_building_target` | field | `PatchBoatTrade` (foreign dock for distance) |
 | `BaseSimObject.stats` → `BaseStats["multiplier_supply_timer"]` | field/indexer | `PatchSupplyCities` (replicated `updateSupplyTimer`) |
+| `BaseBuildingComponent.building` | field | `PatchDockTarget` (dock → city for embargo check) |
+| `City.tryToMakeWarrior` | method | `PatchMercenary` (instant enlistment) — also patched by `PatchTryWarrior` |
 | `BaseSimObject.addStatusEffect(string,float,bool)` | method | `PatchIncreaseKills` |
 | `Actor.getHit` | internal override | `PatchGetHit` (patched by name, `ref pDamage`) |
 | `City.kingdom` | field | `PatchEndWar`, `PatchCheckLoyalty` |

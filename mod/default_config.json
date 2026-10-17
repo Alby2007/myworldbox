@@ -808,6 +808,42 @@
             "FloatVal": 1.0,
             "MinFloatVal": 0.0,
             "MaxFloatVal": 5.0
+        },
+        {
+            "Id": "Mercenaries",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "MercenaryChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.35,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "MercenaryCost",
+            "Type": "SLIDER",
+            "FloatVal": 15.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 100.0
+        },
+        {
+            "Id": "Embargo",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "WarProfiteer",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "WarProfiteerMult",
+            "Type": "SLIDER",
+            "FloatVal": 1.75,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 4.0
         }
     ],
     "HomeFront": [

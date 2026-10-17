@@ -130,6 +130,12 @@
 60. Labor migration — `PatchCityTarget` prefix-supplant `getPotentialCityNearby`: pick `argmax(freeJobSlots×10 − dist + sameKingdom 100)` over welcoming same-island cities
 61. Golden age — `Rebel.PeaceYears` (`!hasWars` → `yearsSince(timestamp_last_war)` or `getAge()` if never at war) ≥ `GoldenAgeYears` → `make_items` ×`GoldenAgeMult` (Tuning) + `GoldenAgeBuilders` extra builder slots (`PatchCitizenTasks`)
 
+## Mod features (v0.9 — deeper plays)
+
+62. Mercenaries — `Actor.joinCity` postfix: adult civ migrant (non-boat, non-warrior) + `MercenaryChance` + city gold ≥ `MercenaryCost` → `takeResource` → `a.addMoney` → reflected `tryToMakeWarrior` enlist
+63. Embargo — `ai.ActorTool.getDockTradeTarget(Actor)` postfix (overloaded → argTypes): vanilla already skips direct enemies; alliance members' boats also skip docks whose kingdom is enemy of ANY alliance member (note `ai` namespace; `Docks.building` internal → reflect `BaseBuildingComponent.building`)
+64. War profiteers — `boat_trading` weight wrap = `BlockadeMult × ProfiteerMult`: boat kingdom peaceful + `wars.getActiveWars()` non-empty → ×`WarProfiteerMult`
+
 ## Access gotchas
 - `internal` (use `AccessTools` reflection): `City.hasBuildingToBuild`, `hasStorageBuilding`, `hasBuildingType`, `City.kingdom`, `City.city_center`, `City.zones`, `City.storages`, `City._timer_warrior`, `City.tryToMakeWarrior`, `City.makeOwnKingdom`, `City.addZone`/`removeZone`, `City.setCulture`/`setReligion`, `DiplomacyManager.startWar`, `Actor.beh_tile_target`, `Actor.beh_building_target`, `Actor.isProfession`, `Actor.addExperience`, `Actor.data`, `Actor.attack_target`, `Actor.has_attack_target`, `Actor.getHit` (internal override, 7 params), `BaseSimObject.stats`, `BaseSimObject.addStatusEffect(string,float,bool)` — note the StatusAsset overload is separate
 - `City.giveItem(Actor, List<long>, City)` is **public static**, returns bool — `PatchGiveItem` diffs total equipped `Item.getValue()` across all `EquipmentType` slots (prefix `__state` → postfix charge `ActorData.money`, deposit to city gold; free while `isInDanger`)

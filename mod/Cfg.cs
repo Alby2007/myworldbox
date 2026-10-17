@@ -60,6 +60,25 @@ namespace CivMindOverhaul
         public static int RageKills = 3;
         public static float RageWindowSec = 30f;
         public static float RageDurationSec = 20f;
+        public static bool MeritSuccession = true;
+        public static bool Reparations = true;
+        public static float ReparationsPct = 25f;
+        public static bool WarHeroes = true;
+        public static float HeroMinKills = 3f;
+        public static bool BalanceAlliances = true;
+        public static bool MoraleAura = true;
+        public static float AuraRadius = 12f;
+        public static float AuraFleeMult = 0.6f;
+        public static bool RallyFlee = true;
+        public static bool MilitiaReserve = true;
+        public static float ReservePeacetimeRatio = 0.6f;
+        public static float RefugeeBoost = 2.5f;
+        public static bool MeritLeaders = true;
+        public static float LeaderMargin = 5f;
+        public static bool Uprisings = true;
+        public static float UprisingLoyalty = 30f;
+        public static float UprisingRecentYears = 10f;
+        public static float UprisingChance = 0.02f;
         public static bool LogTuning = true;
 
         public static void Load(ModConfig pCfg)
@@ -124,6 +143,25 @@ namespace CivMindOverhaul
             RageKills = (int)Slider(pCfg, "WarTactics", "RageKills", RageKills);
             RageWindowSec = Slider(pCfg, "WarTactics", "RageWindowSec", RageWindowSec);
             RageDurationSec = Slider(pCfg, "WarTactics", "RageDurationSec", RageDurationSec);
+            MoraleAura = Switch(pCfg, "WarTactics", "MoraleAura", MoraleAura);
+            AuraRadius = Slider(pCfg, "WarTactics", "AuraRadius", AuraRadius);
+            AuraFleeMult = Slider(pCfg, "WarTactics", "AuraFleeMult", AuraFleeMult);
+            RallyFlee = Switch(pCfg, "WarTactics", "RallyFlee", RallyFlee);
+            MilitiaReserve = Switch(pCfg, "WarTactics", "MilitiaReserve", MilitiaReserve);
+            ReservePeacetimeRatio = Slider(pCfg, "WarTactics", "ReservePeacetimeRatio", ReservePeacetimeRatio);
+            MeritSuccession = Switch(pCfg, "Politics", "MeritSuccession", MeritSuccession);
+            Reparations = Switch(pCfg, "Politics", "Reparations", Reparations);
+            ReparationsPct = Slider(pCfg, "Politics", "ReparationsPct", ReparationsPct);
+            WarHeroes = Switch(pCfg, "Politics", "WarHeroes", WarHeroes);
+            HeroMinKills = Slider(pCfg, "Politics", "HeroMinKills", HeroMinKills);
+            BalanceAlliances = Switch(pCfg, "Politics", "BalanceAlliances", BalanceAlliances);
+            RefugeeBoost = Slider(pCfg, "HomeFront", "RefugeeBoost", RefugeeBoost);
+            MeritLeaders = Switch(pCfg, "HomeFront", "MeritLeaders", MeritLeaders);
+            LeaderMargin = Slider(pCfg, "HomeFront", "LeaderMargin", LeaderMargin);
+            Uprisings = Switch(pCfg, "HomeFront", "Uprisings", Uprisings);
+            UprisingLoyalty = Slider(pCfg, "HomeFront", "UprisingLoyalty", UprisingLoyalty);
+            UprisingRecentYears = Slider(pCfg, "HomeFront", "UprisingRecentYears", UprisingRecentYears);
+            UprisingChance = Slider(pCfg, "HomeFront", "UprisingChance", UprisingChance);
             LogTuning = Switch(pCfg, "Debug", "LogTuning", LogTuning);
         }
 

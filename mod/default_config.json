@@ -369,6 +369,125 @@
             "FloatVal": 20.0,
             "MinFloatVal": 5.0,
             "MaxFloatVal": 120.0
+        },
+        {
+            "Id": "MoraleAura",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "AuraRadius",
+            "Type": "SLIDER",
+            "FloatVal": 12.0,
+            "MinFloatVal": 4.0,
+            "MaxFloatVal": 30.0
+        },
+        {
+            "Id": "AuraFleeMult",
+            "Type": "SLIDER",
+            "FloatVal": 0.6,
+            "MinFloatVal": 0.1,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "RallyFlee",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "MilitiaReserve",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "ReservePeacetimeRatio",
+            "Type": "SLIDER",
+            "FloatVal": 0.6,
+            "MinFloatVal": 0.2,
+            "MaxFloatVal": 0.9
+        }
+    ],
+    "Politics": [
+        {
+            "Id": "MeritSuccession",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "Reparations",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "ReparationsPct",
+            "Type": "SLIDER",
+            "FloatVal": 25.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 50.0
+        },
+        {
+            "Id": "WarHeroes",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "HeroMinKills",
+            "Type": "SLIDER",
+            "FloatVal": 3.0,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 20.0
+        },
+        {
+            "Id": "BalanceAlliances",
+            "Type": "SWITCH",
+            "BoolVal": true
+        }
+    ],
+    "HomeFront": [
+        {
+            "Id": "RefugeeBoost",
+            "Type": "SLIDER",
+            "FloatVal": 2.5,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 6.0
+        },
+        {
+            "Id": "MeritLeaders",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "LeaderMargin",
+            "Type": "SLIDER",
+            "FloatVal": 5.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 20.0
+        },
+        {
+            "Id": "Uprisings",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "UprisingLoyalty",
+            "Type": "SLIDER",
+            "FloatVal": 30.0,
+            "MinFloatVal": 10.0,
+            "MaxFloatVal": 60.0
+        },
+        {
+            "Id": "UprisingRecentYears",
+            "Type": "SLIDER",
+            "FloatVal": 10.0,
+            "MinFloatVal": 2.0,
+            "MaxFloatVal": 30.0
+        },
+        {
+            "Id": "UprisingChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.02,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 0.2
         }
     ],
     "Debug": [

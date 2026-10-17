@@ -101,15 +101,27 @@ Every hook point, its mechanism, and its config gate:
 | `PatchArmyTick` | `Army.checkCaptainExistence` | prefix+postfix | `MoraleShock`, `FocusFire`, `Duels`, `Pillage`, `DesertionWarYears` | Per-army tick dispatcher: shock bookkeeping → focus fire → duels → pillage → desertion |
 | `PatchGetHit` | `Actor.getHit` | prefix (ref pDamage) | `HomeField` | Home-field damage reduction |
 | `PatchWarriorTaxi` | `BehCityActorWarriorTaxiCheck.execute` | postfix | `NavalInvasions` | Follow embarked captain cross-island |
-| `PatchIncreaseKills` | `Actor.increaseKills` | postfix | `BerserkerRage` | Kill-streak → `rage` status |
+| `PatchIncreaseKills` | `Actor.increaseKills` | postfix | `BerserkerRage` | Kill-streak → `rage` status + war-hero kill tally |
+| `PatchEndWar` | `WarManager.endWar` | postfix | `Reparations`, `WarHeroes` | Loser gold → winner capital + hero traits + `PeaceTime` |
+| `PatchSuccessionClan` | `SuccessionTool.getKingFromRoyalClan` | postfix (ref `__result`) | `MeritSuccession` | Best-stat royal-clan heir |
+| `PatchSuccessionLeaders` | `SuccessionTool.getKingFromLeaders` | postfix (ref `__result`) | `MeritSuccession` | Best-stat leader heir |
+| `PatchAllianceTarget` | `DiplomacyHelpers.getAllianceTarget` | prefix-supplant | `BalanceAlliances` | Nearest-valid alliance partner |
+| `PatchFlee` | `BehFindRandomFarTile.execute` | prefix | `RallyFlee` | Flee toward captain / own city |
+| `PatchTryWarrior` | `City.tryToMakeWarrior` | prefix | `MilitiaReserve` | Peacetime warrior fill cap |
+| `PatchSetLeader` | `City.setLeader` | prefix (ref `pActor`) | `MeritLeaders` | Stewardship-scored leader swap |
+| `PatchCheckLoyalty` | `CityBehCheckLoyalty.execute` | postfix | `Uprisings` | Occupied-city rebellion trigger |
 
 Plus tuning-only features with no dedicated patch class (see `Tuning.Apply`):
 `find_city_job` demand weight, expansion/social/reproduction weights, housing-gated
-reproduction, `run_away` morale check (also consumes `WarFx.Shaken`), `warrior_train_with_dummy`
-and `check_warrior_transport` retunes.
+reproduction, `run_away` morale check (also consumes `WarFx.Shaken` and applies the
+commander aura), `warrior_train_with_dummy`, `check_warrior_transport` retunes, and the
+`check_join_city`/`check_join_empty_nearby_city` refugee weight wraps.
 
 `WarFx` (in `Patches.cs`) is a tiny shared-state holder: `Shaken: armyId → Time.time` expiry,
-written by `PatchArmyTick` on field captain-death and read by the `run_away` delegate.
+written by `PatchArmyTick` on field captain-death and read by the `run_away` delegate;
+`HeroKills: actorId → wartime kill count`, fed by `PatchIncreaseKills` and consumed by
+`PatchEndWar`; `PeaceTime: kingdomId → world time of last war end`, bookkeeping for future
+reconstruction logic.
 
 ## Reflection access
 
@@ -131,5 +143,10 @@ null-checked invocation — if a game update renames a member, the patch degrade
 | `Actor.data` | field | `PatchArmyTick` (pillage — `ActorData.loot` set) |
 | `BaseSimObject.addStatusEffect(string,float,bool)` | method | `PatchIncreaseKills` |
 | `Actor.getHit` | internal override | `PatchGetHit` (patched by name, `ref pDamage`) |
+| `City.kingdom` | field | `PatchEndWar`, `PatchCheckLoyalty` |
+| `City.zones` | field | `PatchFlee` (rally fallback target) |
+| `Actor.beh_tile_target` | field | `PatchFlee` |
+| `City.makeOwnKingdom` | method | `PatchCheckLoyalty` (secession) |
+| `DiplomacyManager.startWar` | method | `PatchCheckLoyalty` (rebellion war) |
 
 See [patching-guide.md](patching-guide.md) for the conventions in detail.

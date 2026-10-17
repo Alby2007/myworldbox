@@ -91,6 +91,40 @@ v0.3 features — attrition systems, duels/morale shock, naval & rage. See
 | `RageKills` | Kills to trigger rage | slider | 3 | 2–10 | Streak length required |
 | `RageWindowSec` | Kill streak window (sec) | slider | 30 | 5–120 | Time between kills to keep streak |
 | `RageDurationSec` | Rage duration (sec) | slider | 20 | 5–120 | Applied status duration |
+| `MoraleAura` | Commander aura steadies troops | switch | on | — | Living captain nearby lowers rout threshold |
+| `AuraRadius` | Aura radius (tiles) | slider | 12 | 4–30 | Distance to captain for the aura |
+| `AuraFleeMult` | Aura flee threshold mult | slider | 0.6 | 0.1–1.0 | Rout threshold × with captain near |
+| `RallyFlee` | Routed warriors rally home | switch | on | — | Flee toward captain/own city, not random tiles |
+| `MilitiaReserve` | Peacetime militia reserve | switch | on | — | Cap peacetime warrior conversions |
+| `ReservePeacetimeRatio` | Peacetime army fill ratio | slider | 0.6 | 0.2–0.9 | Max `warriors_current/slots` while safe |
+
+## Politics
+
+v0.4 features — succession, reparations, heroes, alliances. See
+[war-ai.md](war-ai.md) § Politics.
+
+| Id | Label | Type | Default | Range | Controls |
+|---|---|---|---|---|---|
+| `MeritSuccession` | Best-stat heir (succession) | switch | on | — | Deterministic heir pick over dice |
+| `Reparations` | War reparations | switch | on | — | War loser pays gold to winner |
+| `ReparationsPct` | Loser gold seized (%) | slider | 25 | 0–50 | % of each loser city's gold |
+| `WarHeroes` | War heroes get veteran trait | switch | on | — | Top wartime killer per side |
+| `HeroMinKills` | Min kills for war hero | slider | 3 | 1–20 | Wartime kills required |
+| `BalanceAlliances` | Regional alliance blocs | switch | on | — | Nearest-partner alliance picks |
+
+## HomeFront
+
+v0.4 features — refugees, leaders, uprisings. See [war-ai.md](war-ai.md) § Home Front.
+
+| Id | Label | Type | Default | Range | Controls |
+|---|---|---|---|---|---|
+| `RefugeeBoost` | War refugee join urge | slider | 2.5 | 0–6 | Weight × on join-city for homeless at-war civilians; 0 disables |
+| `MeritLeaders` | Best-stewardship city leaders | switch | on | — | Stewardship-scored leader picks |
+| `LeaderMargin` | Leader swap margin | slider | 5 | 0–20 | Score gap needed to override vanilla pick |
+| `Uprisings` | Occupied cities revolt | switch | on | — | Low-loyalty recently-captured cities rebel |
+| `UprisingLoyalty` | Uprising loyalty threshold | slider | 30 | 10–60 | Loyalty below this is revolt-eligible |
+| `UprisingRecentYears` | Recent conquest window | slider | 10 | 2–30 | Years since capture that count as "occupied" |
+| `UprisingChance` | Uprising chance (per check) | slider | 0.02 | 0–0.2 | Per loyalty-check roll (~1%/s at 0.02) |
 
 ## Debug
 

@@ -570,6 +570,8 @@ namespace CivMindOverhaul
     internal static class WarFx
     {
         internal static readonly Dictionary<long, float> Shaken = new Dictionary<long, float>();
+        internal static readonly Dictionary<long, int> HeroKills = new Dictionary<long, int>();
+        internal static readonly Dictionary<long, double> PeaceTime = new Dictionary<long, double>();
     }
 
     [HarmonyPatch(typeof(Army), "checkCaptainExistence")]
@@ -880,6 +882,12 @@ namespace CivMindOverhaul
             {
                 float now = UnityEngine.Time.time;
                 long id = __instance.id;
+                if (__instance.kingdom != null && World.world.wars.hasWars(__instance.kingdom))
+                {
+                    int hc;
+                    WarFx.HeroKills.TryGetValue(id, out hc);
+                    WarFx.HeroKills[id] = hc + 1;
+                }
                 Streak s;
                 if (!_streaks.TryGetValue(id, out s))
                 {
@@ -921,6 +929,498 @@ namespace CivMindOverhaul
             catch (Exception e)
             {
                 UnityEngine.Debug.LogWarning("[CivMind] rage patch failed: " + e.Message);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(WarManager), "endWar")]
+    internal static class PatchEndWar
+    {
+        private static readonly FieldInfo _cityKingdom = AccessTools.Field(typeof(City), "kingdom");
+
+        private static void Postfix(War pWar, WarWinner pWinner)
+        {
+            try
+            {
+                if (pWar == null)
+                {
+                    return;
+                }
+                Kingdom atk = pWar.getMainAttacker();
+                Kingdom def = pWar.getMainDefender();
+                double now = World.world.getCurWorldTime();
+                if (atk != null)
+                {
+                    WarFx.PeaceTime[atk.id] = now;
+                }
+                if (def != null)
+                {
+                    WarFx.PeaceTime[def.id] = now;
+                }
+                if (Cfg.WarHeroes)
+                {
+                    GrantHero(atk);
+                    GrantHero(def);
+                }
+                if (!Cfg.Reparations || _cityKingdom == null || Cfg.ReparationsPct <= 0f)
+                {
+                    return;
+                }
+                Kingdom winner = null;
+                Kingdom loser = null;
+                if (pWinner == WarWinner.Attackers)
+                {
+                    winner = atk;
+                    loser = def;
+                }
+                else if (pWinner == WarWinner.Defenders)
+                {
+                    winner = def;
+                    loser = atk;
+                }
+                if (winner == null || loser == null || !winner.hasCapital())
+                {
+                    return;
+                }
+                int total = 0;
+                foreach (City city in loser.getCities())
+                {
+                    int gold = city.getResourcesAmount("gold");
+                    int take = (int)(gold * Cfg.ReparationsPct / 100f);
+                    if (take > 0)
+                    {
+                        city.takeResource("gold", take);
+                        total += take;
+                    }
+                }
+                if (total > 0)
+                {
+                    winner.capital.addResourcesToRandomStockpile("gold", total);
+                    UnityEngine.Debug.Log("[CivMind] reparations: " + total + " gold from " + loser.name + " to " + winner.name);
+                }
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[CivMind] end war patch failed: " + e.Message);
+            }
+        }
+
+        private static void GrantHero(Kingdom pKingdom)
+        {
+            if (pKingdom == null || WarFx.HeroKills.Count == 0)
+            {
+                return;
+            }
+            Actor best = null;
+            int bestKills = -1;
+            foreach (KeyValuePair<long, int> kv in WarFx.HeroKills)
+            {
+                if (kv.Value <= bestKills)
+                {
+                    continue;
+                }
+                Actor a = World.world.units.get(kv.Key);
+                if (a == null || a.isRekt() || a.kingdom != pKingdom)
+                {
+                    continue;
+                }
+                best = a;
+                bestKills = kv.Value;
+            }
+            if (best != null && bestKills >= Cfg.HeroMinKills)
+            {
+                best.addTrait("veteran");
+                UnityEngine.Debug.Log("[CivMind] war hero: " + best.getName() + " (" + bestKills + " kills)");
+            }
+            List<long> done = null;
+            foreach (KeyValuePair<long, int> kv in WarFx.HeroKills)
+            {
+                Actor a = World.world.units.get(kv.Key);
+                if (a == null || a.kingdom == pKingdom)
+                {
+                    if (done == null)
+                    {
+                        done = new List<long>();
+                    }
+                    done.Add(kv.Key);
+                }
+            }
+            if (done != null)
+            {
+                for (int i = 0; i < done.Count; i++)
+                {
+                    WarFx.HeroKills.Remove(done[i]);
+                }
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(SuccessionTool), "getKingFromRoyalClan")]
+    internal static class PatchSuccessionClan
+    {
+        private static readonly FieldInfo _stats = AccessTools.Field(typeof(BaseSimObject), "stats");
+
+        private static void Postfix(ref Actor __result, Kingdom pKingdom, Actor pExcludeActor)
+        {
+            if (!Cfg.MeritSuccession || __result == null || _stats == null)
+            {
+                return;
+            }
+            try
+            {
+                Clan clan = World.world.clans.get(pKingdom.data.royal_clan_id);
+                if (clan == null)
+                {
+                    return;
+                }
+                float bestScore = Score(__result);
+                for (int i = 0; i < clan.units.Count; i++)
+                {
+                    Actor u = clan.units[i];
+                    if (u == null || u == pExcludeActor || u == __result || !clan.fitToRule(u, pKingdom))
+                    {
+                        continue;
+                    }
+                    float s = Score(u);
+                    if (s > bestScore)
+                    {
+                        bestScore = s;
+                        __result = u;
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        internal static float Score(Actor a)
+        {
+            BaseStats s = _stats.GetValue(a) as BaseStats;
+            if (s == null)
+            {
+                return 0f;
+            }
+            return s["diplomacy"] + s["stewardship"] + s["warfare"] * 0.5f + a.level;
+        }
+
+        internal static float ScoreLeader(Actor a)
+        {
+            if (_stats == null)
+            {
+                return 0f;
+            }
+            BaseStats s = _stats.GetValue(a) as BaseStats;
+            if (s == null)
+            {
+                return 0f;
+            }
+            return s["stewardship"] + a.level * 0.5f;
+        }
+    }
+
+    [HarmonyPatch(typeof(SuccessionTool), "getKingFromLeaders")]
+    internal static class PatchSuccessionLeaders
+    {
+        private static void Postfix(ref Actor __result, Kingdom pKingdom)
+        {
+            if (!Cfg.MeritSuccession || __result == null)
+            {
+                return;
+            }
+            try
+            {
+                float bestScore = PatchSuccessionClan.Score(__result);
+                foreach (City city in pKingdom.getCities())
+                {
+                    if (!city.hasLeader())
+                    {
+                        continue;
+                    }
+                    Actor u = city.leader;
+                    if (u == null || u == __result || u.isRekt())
+                    {
+                        continue;
+                    }
+                    float s = PatchSuccessionClan.Score(u);
+                    if (s > bestScore)
+                    {
+                        bestScore = s;
+                        __result = u;
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(DiplomacyHelpers), "getAllianceTarget")]
+    internal static class PatchAllianceTarget
+    {
+        private static bool Prefix(ref Kingdom __result, Kingdom pKingdomStarter)
+        {
+            if (!Cfg.BalanceAlliances)
+            {
+                return true;
+            }
+            try
+            {
+                __result = null;
+                if (pKingdomStarter.isSupreme())
+                {
+                    return false;
+                }
+                Kingdom best = null;
+                float bestDist = float.MaxValue;
+                ListPool<Kingdom> pool = World.world.wars.getNeutralKingdoms(pKingdomStarter, pOnlyWithoutWars: true, pOnlyWithoutAlliances: true);
+                try
+                {
+                    for (int i = 0; i < pool.Count; i++)
+                    {
+                        Kingdom k = pool[i];
+                        if (!k.hasKing() || k.isSupreme() || k.king.hasPlot() || !pKingdomStarter.isOpinionTowardsKingdomGood(k) || k.getRenown() < PlotsLibrary.alliance_create.min_renown_kingdom)
+                        {
+                            continue;
+                        }
+                        bool ok = DiplomacyHelpers.areKingdomsClose(k, pKingdomStarter);
+                        if (!ok && pKingdomStarter.countCities() <= 2 && k.countCities() <= 2 && !pKingdomStarter.hasNearbyKingdoms() && !k.hasNearbyKingdoms())
+                        {
+                            ok = true;
+                        }
+                        if (!ok)
+                        {
+                            continue;
+                        }
+                        float dist = Kingdom.distanceBetweenKingdom(pKingdomStarter, k);
+                        if (dist < bestDist)
+                        {
+                            bestDist = dist;
+                            best = k;
+                        }
+                    }
+                }
+                finally
+                {
+                    pool.Dispose();
+                }
+                __result = best;
+                return false;
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[CivMind] alliance target patch failed: " + e.Message);
+                return true;
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(BehFindRandomFarTile), "execute")]
+    internal static class PatchFlee
+    {
+        private static readonly FieldInfo _behTileTarget = AccessTools.Field(typeof(Actor), "beh_tile_target");
+        private static readonly FieldInfo _cityZones = AccessTools.Field(typeof(City), "zones");
+
+        private static bool Prefix(Actor pActor, ref BehResult __result)
+        {
+            if (!Cfg.RallyFlee || _behTileTarget == null)
+            {
+                return true;
+            }
+            try
+            {
+                Army army = pActor.army;
+                if (army == null)
+                {
+                    return true;
+                }
+                WorldTile target = null;
+                if (army.hasCaptain())
+                {
+                    Actor cap = army.getCaptain();
+                    if (cap != null && !cap.isRekt() && cap != pActor && cap.current_tile != null)
+                    {
+                        target = cap.current_tile;
+                    }
+                }
+                if (target == null && pActor.city != null && !pActor.city.isInDanger() && _cityZones != null)
+                {
+                    List<TileZone> z = _cityZones.GetValue(pActor.city) as List<TileZone>;
+                    if (z != null && z.Count > 0)
+                    {
+                        target = z[Randy.randomInt(0, z.Count)].centerTile;
+                    }
+                }
+                if (target == null)
+                {
+                    return true;
+                }
+                _behTileTarget.SetValue(pActor, target);
+                __result = BehResult.Continue;
+                return false;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(City), "tryToMakeWarrior")]
+    internal static class PatchTryWarrior
+    {
+        private static bool Prefix(City __instance, Actor pActor, ref bool __result)
+        {
+            if (!Cfg.MilitiaReserve)
+            {
+                return true;
+            }
+            try
+            {
+                if (!__instance.isInDanger() && __instance.status.warriors_current >= (int)(__instance.status.warrior_slots * Cfg.ReservePeacetimeRatio))
+                {
+                    __result = false;
+                    return false;
+                }
+            }
+            catch
+            {
+            }
+            return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(City), "setLeader")]
+    internal static class PatchSetLeader
+    {
+        private static void Prefix(City __instance, ref Actor pActor, bool pNew)
+        {
+            if (!Cfg.MeritLeaders || !pNew || pActor == null)
+            {
+                return;
+            }
+            try
+            {
+                float bestScore = PatchSuccessionClan.ScoreLeader(pActor);
+                Actor best = pActor;
+                for (int i = 0; i < __instance.units.Count; i++)
+                {
+                    Actor u = __instance.units[i];
+                    if (u == null || u == pActor || u.isRekt() || !u.is_profession_citizen || u.isKing() || u.isCityLeader())
+                    {
+                        continue;
+                    }
+                    float s = PatchSuccessionClan.ScoreLeader(u);
+                    if (s > bestScore)
+                    {
+                        bestScore = s;
+                        best = u;
+                    }
+                }
+                if (bestScore > PatchSuccessionClan.ScoreLeader(pActor) + Cfg.LeaderMargin)
+                {
+                    pActor = best;
+                }
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(CityBehCheckLoyalty), "execute")]
+    internal static class PatchCheckLoyalty
+    {
+        private static readonly MethodInfo _makeOwnKingdom = AccessTools.Method(typeof(City), "makeOwnKingdom", new Type[]
+        {
+            typeof(Actor),
+            typeof(bool),
+            typeof(bool)
+        });
+        private static readonly MethodInfo _startWar = AccessTools.Method(typeof(DiplomacyManager), "startWar", new Type[]
+        {
+            typeof(Kingdom),
+            typeof(Kingdom),
+            typeof(WarTypeAsset),
+            typeof(bool)
+        });
+        private static readonly FieldInfo _kingdom = AccessTools.Field(typeof(City), "kingdom");
+        private static readonly HashSet<long> _uprisingDone = new HashSet<long>();
+
+        private static void Postfix(City pCity)
+        {
+            if (!Cfg.Uprisings || _makeOwnKingdom == null || _startWar == null || _kingdom == null)
+            {
+                return;
+            }
+            try
+            {
+                if (_uprisingDone.Contains(pCity.id) || pCity.isCapitalCity())
+                {
+                    return;
+                }
+                if (!WorldLawLibrary.world_law_rebellions.isEnabled())
+                {
+                    return;
+                }
+                if (pCity.getLoyalty() >= Cfg.UprisingLoyalty || Date.getYearsSince(pCity.data.timestamp_kingdom) >= Cfg.UprisingRecentYears)
+                {
+                    return;
+                }
+                Kingdom oldK = _kingdom.GetValue(pCity) as Kingdom;
+                if (oldK == null || !oldK.isAlive() || oldK.isNeutral())
+                {
+                    return;
+                }
+                if (!Randy.randomChance(Cfg.UprisingChance))
+                {
+                    return;
+                }
+                Actor rebel = pCity.leader;
+                if (rebel == null || rebel.isRekt())
+                {
+                    rebel = null;
+                    for (int i = 0; i < pCity.units.Count; i++)
+                    {
+                        Actor u = pCity.units[i];
+                        if (u != null && !u.isRekt() && u.isUnitFitToRule() && !u.isKing() && !u.isCityLeader())
+                        {
+                            rebel = u;
+                            break;
+                        }
+                    }
+                }
+                if (rebel == null)
+                {
+                    return;
+                }
+                _uprisingDone.Add(pCity.id);
+                if (rebel.isCityLeader())
+                {
+                    pCity.removeLeader();
+                }
+                Kingdom newK = _makeOwnKingdom.Invoke(pCity, new object[] { rebel, true, false }) as Kingdom;
+                if (newK != null)
+                {
+                    _startWar.Invoke(World.world.diplomacy, new object[] { oldK, newK, WarTypeLibrary.rebellion, true });
+                    WorldLog.logCityRevolt(pCity);
+                    UnityEngine.Debug.Log("[CivMind] uprising: " + pCity.name + " revolts against " + oldK.name);
+                    ListPool<City> pool = new ListPool<City>();
+                    try
+                    {
+                        pool.Add(pCity);
+                        DiplomacyHelpersRebellion.checkMoreAlignedCities(newK, oldK, pool, true);
+                    }
+                    finally
+                    {
+                        pool.Dispose();
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[CivMind] uprising patch failed: " + e.Message);
             }
         }
     }

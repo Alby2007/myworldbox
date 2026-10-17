@@ -1,4 +1,4 @@
-# Combat & War AI Features (features 7–14)
+# Combat & War AI Features (features 7–33)
 
 What the mod changes about fighting, armies, and diplomacy, and where each change lands.
 Vanilla background: [vanilla-ai-primer.md](vanilla-ai-primer.md) § "War & diplomacy pipeline".
@@ -17,6 +17,7 @@ Vanilla background: [vanilla-ai-primer.md](vanilla-ai-primer.md) § "War & diplo
 | 14 | Training retune | Tuning: weight/cooldown on `warrior_train_with_dummy` | `TrainWeight`, `TrainCooldown` |
 
 v0.3 adds nine more features (15–23) riding a shared per-army tick — see **War Tactics** below.
+v0.4 adds ten more (24–33) — see **Politics, Battlefield Polish & Home Front**.
 
 ## Where they land in the pipeline
 
@@ -205,3 +206,95 @@ the captain's tile — followers chase the transport.
 build a streak; at `RageKills` → `addStatusEffect("rage", RageDurationSec)` (internal method,
 reflected). `rage` grants `multiplier_damage = 1.0` (double damage) but is `affects_mind` —
 kept short (20 s default).
+
+---
+
+# Politics, Battlefield Polish & Home Front (features 24–33)
+
+v0.4 adds three packs. Politics wraps the end-of-war path and the succession/alliance
+helpers; Battlefield Polish extends the `run_away` delegate and flee behaviour; Home Front
+adds refugee pressure, merit leaders, and occupied-city revolts.
+
+## 24. Merit succession
+
+Vanilla `SuccessionTool.getKingFromLeaders`/`getKingFromRoyalClan` pick the heir via
+`ActorTool.attributeDice` — a literal dice roll. The postfixes rescore `__result`:
+`max(diplomacy + stewardship + warfare*0.5 + level)` across eligible candidates (clan
+members that pass `fitToRule`, or living city leaders). Best-stat heir, deterministic.
+
+## 25. War reparations
+
+`WarManager.endWar` postfix: when the war ends with `WarWinner.Attackers` or `Defenders`
+(not `Peace`), the losing main kingdom's cities each pay `ReparationsPct`% of their
+`gold` stockpile into the winner's capital (`takeResource` →
+`addResourcesToRandomStockpile`). Skipped when the winner has no capital.
+
+## 26. War heroes
+
+`PatchIncreaseKills` feeds `WarFx.HeroKills[actorId]` — but only while the killer's
+kingdom is at war, so peacetime hunting doesn't count. At `endWar`, each main side's top
+killer with ≥ `HeroMinKills` wartime kills gets `addTrait("veteran")` and a log line;
+that side's entries are then cleared so the award fires once per war.
+
+## 27. Balance-of-power alliances
+
+`getAllianceTarget` prefix-supplant. All vanilla eligibility checks are preserved
+(no supreme kingdom, valid king, no active plot, good opinion, renown ≥
+`alliance_create.min_renown_kingdom`, proximity or 2-city-isolation exception) but the
+random `LoopRandom` pick is replaced by `argmin(distanceBetweenKingdom)` — kingdoms
+prefer their nearest valid partner, so contiguous regional blocs form instead of
+scattered marriages of convenience. `ListPool` disposed in `finally`.
+
+## 28. Commander aura
+
+Inverse of morale shock: in the `run_away` delegate, a living captain within
+`AuraRadius` tiles multiplies the unit's rout threshold by `AuraFleeMult` (0.6) —
+troops hold longer while their leader stands. Applied **before** the shock multiplier
+so the existing 0.95 cap still bounds the combined result.
+
+## 29. Rally flee
+
+`BehFindRandomFarTile` prefix (the behaviour `run_away` uses to pick a destination):
+army units flee **toward their captain's tile**, or failing that a random zone center
+of their own city, instead of a random far tile. `beh_tile_target` and `City.zones`
+are internal → reflected. Non-army actors and missing targets fall through to vanilla.
+Returns `BehResult.Continue` so `BehGoToTileTarget` runs as usual.
+
+## 30. Militia reserve
+
+`City.tryToMakeWarrior` prefix: in peacetime, conversion is refused once
+`warriors_current >= warrior_slots × ReservePeacetimeRatio` — cities march at ~60%
+strength and keep a garrison at home. `isInDanger` bypasses the cap, so the emergency
+draft (feature 3) still fills every slot.
+
+## 31. War refugees
+
+`check_join_city`/`check_join_empty_nearby_city` weights wrapped (same pattern as the
+housing gate): actors with `city == null` whose kingdom is at war get
+`× RefugeeBoost` — displaced civilians actively seek shelter instead of wandering.
+Multiplies through vanilla custom weight delegates where present; `0` disables.
+
+## 32. Merit leaders
+
+`City.setLeader` prefix with `ref pActor`: scans `city.units` for eligible citizens
+(`is_profession_citizen`, not king/leader); a candidate must beat the vanilla pick's
+`stewardship + level*0.5` by `LeaderMargin` to swap in — avoids churn when vanilla
+already picked someone decent.
+
+## 33. Occupied-city uprisings
+
+`CityBehCheckLoyalty` postfix — vanilla calls `getLoyalty(true)` every ~2 s per city,
+which is the perfect periodic probe. A city revolts when **all** hold:
+
+- not the capital, and `_uprisingDone` hasn't fired for it
+- `world_law_rebellions` enabled
+- `getLoyalty() < UprisingLoyalty` (30)
+- `Date.getYearsSince(timestamp_kingdom) < UprisingRecentYears` (10) — recently conquered
+- `randomChance(UprisingChance)` (0.02 per check → ~1%/s)
+
+Then: pick a rebel (city leader, else a `isUnitFitToRule` citizen), remove their
+leadership, `makeOwnKingdom` (internal → reflected) to secede, `startWar(oldK, newK,
+WarTypeLibrary.rebellion)` (internal → reflected), `WorldLog.logCityRevolt`, and
+`checkMoreAlignedCities` so neighbouring unhappy cities can join the revolt — the same
+plumbing `DiplomacyHelpersRebellion.startRebellion` uses, minus its hard `Plot`
+requirement.

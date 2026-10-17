@@ -36,7 +36,19 @@ armies rout when beaten, and wars actually end.
 - **Naval invasions** — warriors pile into transport boats for overseas assaults, following the captain
 - **Berserker rage** — kill streaks grant a short `rage` status (double damage)
 
-Every feature is toggleable/tunable in-game: **NML window → mod → Mod Configuration** (~30 options).
+### Politics & home front (v0.4)
+- **Merit succession** — kings are succeeded by the best-stat heir, not a dice roll
+- **War reparations** — the losing side's cities pay a share of their gold to the victor
+- **War heroes** — each side's top wartime killer earns the `veteran` trait
+- **Regional alliances** — kingdoms ally with their nearest valid partner, forming blocs
+- **Commander aura** — troops hold the line longer while their captain stands nearby
+- **Rally flee** — routed warriors fall back toward their captain or home city
+- **Militia reserve** — cities keep a garrison at home instead of marching at full strength
+- **War refugees** — displaced civilians actively seek shelter in friendly cities
+- **Merit leaders** — cities are run by their best stewards
+- **Occupied-city uprisings** — unhappy recently-conquered cities can revolt into a rebellion war
+
+Every feature is toggleable/tunable in-game: **NML window → mod → Mod Configuration** (~50 options).
 See [docs/config-reference.md](docs/config-reference.md) for the full list.
 
 ## Install

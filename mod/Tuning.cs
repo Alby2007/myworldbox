@@ -62,6 +62,12 @@ namespace CivMindOverhaul
             Retune("check_swearing", Cfg.SocializeWeight, 1f);
             Retune("try_to_read", Cfg.SocializeWeight, 1f);
 
+            if (Cfg.RefugeeBoost > 0f)
+            {
+                RetuneRefugee("check_join_city");
+                RetuneRefugee("check_join_empty_nearby_city");
+            }
+
             Retune("warrior_train_with_dummy", Cfg.TrainWeight, Cfg.TrainCooldown);
             if (Cfg.NavalInvasions)
             {
@@ -146,6 +152,60 @@ namespace CivMindOverhaul
             Log($"retuned {pId}: housing-gated");
         }
 
+        private static void RetuneRefugee(string pId)
+        {
+            DecisionAsset d = Find(pId);
+            if (d == null)
+            {
+                Log("missing decision: " + pId);
+                return;
+            }
+            if (!_origWeight.ContainsKey(pId))
+            {
+                _origWeight[pId] = d.weight;
+                _origCooldown[pId] = d.cooldown;
+                _origCustom[pId] = d.weight_calculate_custom;
+            }
+            DecisionActionWeight orig = _origCustom[pId];
+            float w = _origWeight[pId];
+            if (orig == null)
+            {
+                d.has_weight_custom = true;
+                d.weight_calculate_custom = delegate(Actor a)
+                {
+                    return w * RefugeeMult(a);
+                };
+            }
+            else
+            {
+                d.weight_calculate_custom = delegate(Actor a)
+                {
+                    return orig(a) * RefugeeMult(a);
+                };
+            }
+            d.cooldown = _origCooldown[pId];
+            Log($"retuned {pId}: refugee-boosted");
+        }
+
+        private static float RefugeeMult(Actor a)
+        {
+            if (a.city != null || a.kingdom == null)
+            {
+                return 1f;
+            }
+            try
+            {
+                if (World.world.wars.hasWars(a.kingdom))
+                {
+                    return Cfg.RefugeeBoost;
+                }
+            }
+            catch
+            {
+            }
+            return 1f;
+        }
+
         private static void ReworkRetreat(string pId)
         {
             DecisionAsset d = Find(pId);
@@ -173,6 +233,14 @@ namespace CivMindOverhaul
                         t *= 0.5f;
                     }
                     t += a.warfare * 0.003f;
+                }
+                if (Cfg.MoraleAura && a.army != null && a.army.hasCaptain())
+                {
+                    Actor cap = a.army.getCaptain();
+                    if (cap != null && !cap.isRekt() && cap.current_tile != null && (float)Toolbox.SquaredDistTile(a.current_tile, cap.current_tile) <= Cfg.AuraRadius * Cfg.AuraRadius)
+                    {
+                        t *= Cfg.AuraFleeMult;
+                    }
                 }
                 if (Cfg.MoraleShock && a.army != null)
                 {

@@ -210,6 +210,167 @@
             "MaxFloatVal": 1.0
         }
     ],
+    "WarTactics": [
+        {
+            "Id": "WarscoreSurrender",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "WarscoreMinDeaths",
+            "Type": "SLIDER",
+            "FloatVal": 20.0,
+            "MinFloatVal": 5.0,
+            "MaxFloatVal": 100.0
+        },
+        {
+            "Id": "WarscoreRatio",
+            "Type": "SLIDER",
+            "FloatVal": 3.0,
+            "MinFloatVal": 1.5,
+            "MaxFloatVal": 10.0
+        },
+        {
+            "Id": "FocusFire",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "FocusFireChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.15,
+            "MinFloatVal": 0.02,
+            "MaxFloatVal": 0.5
+        },
+        {
+            "Id": "HomeField",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "HomeFieldMult",
+            "Type": "SLIDER",
+            "FloatVal": 0.8,
+            "MinFloatVal": 0.3,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "DesertionWarYears",
+            "Type": "SLIDER",
+            "FloatVal": 8.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 30.0
+        },
+        {
+            "Id": "DesertionChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.005,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 0.1
+        },
+        {
+            "Id": "Pillage",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "PillageChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.02,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 0.2
+        },
+        {
+            "Id": "PillageAmount",
+            "Type": "SLIDER",
+            "FloatVal": 5.0,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 30.0
+        },
+        {
+            "Id": "Duels",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "DuelChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.5,
+            "MinFloatVal": 0.05,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "DuelRadius",
+            "Type": "SLIDER",
+            "FloatVal": 8.0,
+            "MinFloatVal": 2.0,
+            "MaxFloatVal": 20.0
+        },
+        {
+            "Id": "MoraleShock",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "ShockSeconds",
+            "Type": "SLIDER",
+            "FloatVal": 30.0,
+            "MinFloatVal": 5.0,
+            "MaxFloatVal": 120.0
+        },
+        {
+            "Id": "ShockFleeMult",
+            "Type": "SLIDER",
+            "FloatVal": 2.5,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 5.0
+        },
+        {
+            "Id": "NavalInvasions",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "TransportWeight",
+            "Type": "SLIDER",
+            "FloatVal": 1.75,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 4.0
+        },
+        {
+            "Id": "TransportCooldown",
+            "Type": "SLIDER",
+            "FloatVal": 0.5,
+            "MinFloatVal": 0.05,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "BerserkerRage",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "RageKills",
+            "Type": "SLIDER",
+            "FloatVal": 3.0,
+            "MinFloatVal": 2.0,
+            "MaxFloatVal": 10.0
+        },
+        {
+            "Id": "RageWindowSec",
+            "Type": "SLIDER",
+            "FloatVal": 30.0,
+            "MinFloatVal": 5.0,
+            "MaxFloatVal": 120.0
+        },
+        {
+            "Id": "RageDurationSec",
+            "Type": "SLIDER",
+            "FloatVal": 20.0,
+            "MinFloatVal": 5.0,
+            "MaxFloatVal": 120.0
+        }
+    ],
     "Debug": [
         {
             "Id": "LogTuning",

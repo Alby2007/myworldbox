@@ -16,6 +16,8 @@ Vanilla background: [vanilla-ai-primer.md](vanilla-ai-primer.md) § "War & diplo
 | 13 | War tempo | `PatchSimGlobalsInit` postfix | `WarTimeoutYears`, `WarMinWarriors`, `WarPeaceYears` |
 | 14 | Training retune | Tuning: weight/cooldown on `warrior_train_with_dummy` | `TrainWeight`, `TrainCooldown` |
 
+v0.3 adds nine more features (15–23) riding a shared per-army tick — see **War Tactics** below.
+
 ## Where they land in the pipeline
 
 ```mermaid
@@ -117,3 +119,89 @@ if war.getAge() >= WarStalemateYears
 `warrior_train_with_dummy` (needs a `type_training_dummies` building; 15% chance of a combat
 trait per session) gets `TrainWeight` × weight and `TrainCooldown` × cooldown — defaults 1.4×/0.6×
 so barracks actually get used.
+
+---
+
+# War Tactics (features 15–23)
+
+v0.3 adds a per-army tick hook — `PatchArmyTick` on `Army.checkCaptainExistence` (called every
+tick by `ArmyManager.update` for every army). Its prefix captures the old captain in `__state`
+(before vanilla elects a replacement); the postfix dispatches feature blocks in order:
+**shock bookkeeping → focus fire → duels → pillage → desertion**. Expensive scans are gated by
+`Randy.randomChance` so they run ~1×/sec per army, not every frame.
+
+```mermaid
+flowchart TD
+    AT[ArmyManager.update → checkCaptainExistence] --> PRE[prefix: __state = old captain]
+    PRE --> V[vanilla: clear rekt captain, findCaptain ◄ merit pick]
+    V --> POST[PatchArmyTick postfix]
+    POST --> S1{old captain rekt<br/>and in field?} -->|yes| S2[WarFx.Shaken army.id = now+ShockSec]
+    POST --> FF{captain has live<br/>attack target?} -->|yes| FF2[units roll FocusFireChance<br/>→ setAttackTarget target]
+    POST --> DU[10% gate: scan world.armies<br/>enemy captains within DuelRadius]
+    DU --> DU2{pair seen in<br/>last 60s?} -->|no| DU3{roll DuelChance} -->|yes| DU4[mutual setAttackTarget<br/>log duel]
+    POST --> PI{captain in enemy<br/>city zone?} -->|yes| PI2[units roll PillageChance<br/>steal gold → data.loot]
+    POST --> PI3{unit in own borders<br/>with loot?} -->|yes| PI4[deposit to stockpile]
+    POST --> DE{long old war AND<br/>captain abroad?} -->|yes| DE2[random unit stopBeingWarrior]
+```
+
+## 15. Warscore surrender
+
+Inside `PatchWarUpdate` (shared `hasEnded`/`isTotalWar` guard): if `max(deadA, deadD) >=
+WarscoreMinDeaths` and the kill ratio ≥ `WarscoreRatio`, the side that bled more surrenders via
+`war.lostWar(loser)` — `removeFromWar` handles main-side checks and picks the `WarWinner`.
+A `_warscoreDone` set makes it fire once per war (multi-kingdom wars could otherwise cascade —
+`lostWar` re-calls `update()` reentrantly).
+
+## 16. Focus fire
+
+When the captain has a live `attack_target`, each warrior rolls `FocusFireChance` per tick to
+adopt it. `attack_target`/`has_attack_target` are internal fields → cached `FieldInfo`s; the
+write (`setAttackTarget`) is public.
+
+## 17. Home-field advantage
+
+`PatchGetHit` prefixes `Actor.getHit` (7 params, `ref pDamage`): a defender inside own city
+borders takes `pDamage *= HomeFieldMult` (0.8 default). `pAttacker != null` excludes
+self/environment damage.
+
+## 18. Desertion
+
+Abroad armies in wars older than `DesertionWarYears` (non-total) bleed a random unit per
+`DesertionChance` gate via `stopBeingWarrior()`. Uses the army tick because vanilla's
+`check_warrior_limit` decision only runs inside own borders — field armies never evaluate it.
+
+## 19. Pillage
+
+Captain standing in an enemy-zone city → each unit rolls `PillageChance` to steal
+`min(cityGold, rand(1..PillageAmount))` into `ActorData.loot` (via reflected `Actor.data`).
+Survivors deposit loot at home stockpiles when back in own borders — plunder physically travels
+with the army.
+
+## 20. Champion duels
+
+10%-gated scan of `World.world.armies` for an enemy captain within `DuelRadius` tiles
+(neither inside boats/buildings). Each army pair gets one roll per 60 s encounter window
+(`_duelPairs` dedup) — pass `DuelChance` (50%) → mutual `setAttackTarget`. Synergy: merit
+captains (feature 8) win duels.
+
+## 21. Morale shock
+
+Captain dies in the field (detected via `__state` in prefix — vanilla's `findCaptain` has
+already replaced him) → `WarFx.Shaken[armyId] = Time.time + ShockSeconds`. The `run_away`
+delegate multiplies the rout threshold by `ShockFleeMult` while shocked (capped at 0.95) —
+kill the champion, break the army.
+
+## 22. Naval invasions
+
+`check_warrior_transport` retuned to ×1.75 weight / ×0.5 cooldown — vanilla already gates on
+`hasAttackZoneOrder && !sameIsland`, and `TaxiManager.newRequest` merges same-kingdom/same-island
+requests so the whole army piles into one boat. `PatchWarriorTaxi` postfix: when the vanilla
+check returns `Stop`, a warrior whose captain is embarked on another island requests a taxi to
+the captain's tile — followers chase the transport.
+
+## 23. Berserker rage
+
+`Actor.increaseKills` postfix (private method, patchable by name): kills within `RageWindowSec`
+build a streak; at `RageKills` → `addStatusEffect("rage", RageDurationSec)` (internal method,
+reflected). `rage` grants `multiplier_damage = 1.0` (double damage) but is `affects_mind` —
+kept short (20 s default).

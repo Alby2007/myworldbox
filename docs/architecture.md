@@ -97,11 +97,19 @@ Every hook point, its mechanism, and its config gate:
 | `PatchFindCaptain` | `Army.findCaptain` | prefix-supplant | `MeritCaptains` | Merit-based captain |
 | `PatchGetWarTarget` | `DiplomacyHelpers.getWarTarget` | prefix-supplant | `SmartWarTarget` | Scored war targets |
 | `PatchFindTargetCity` | `CityBehCheckAttackZone.findTargetCity` | prefix-supplant | `SmartCityTarget` | Scored siege targets |
-| `PatchWarUpdate` | `War.update` | postfix | `WarStalemateYears > 0` | Stalemate auto-peace |
+| `PatchWarUpdate` | `War.update` | postfix | `WarStalemateYears > 0`, `WarscoreSurrender` | Stalemate auto-peace + warscore surrender |
+| `PatchArmyTick` | `Army.checkCaptainExistence` | prefix+postfix | `MoraleShock`, `FocusFire`, `Duels`, `Pillage`, `DesertionWarYears` | Per-army tick dispatcher: shock bookkeeping → focus fire → duels → pillage → desertion |
+| `PatchGetHit` | `Actor.getHit` | prefix (ref pDamage) | `HomeField` | Home-field damage reduction |
+| `PatchWarriorTaxi` | `BehCityActorWarriorTaxiCheck.execute` | postfix | `NavalInvasions` | Follow embarked captain cross-island |
+| `PatchIncreaseKills` | `Actor.increaseKills` | postfix | `BerserkerRage` | Kill-streak → `rage` status |
 
 Plus tuning-only features with no dedicated patch class (see `Tuning.Apply`):
 `find_city_job` demand weight, expansion/social/reproduction weights, housing-gated
-reproduction, `run_away` morale check, `warrior_train_with_dummy` retune.
+reproduction, `run_away` morale check (also consumes `WarFx.Shaken`), `warrior_train_with_dummy`
+and `check_warrior_transport` retunes.
+
+`WarFx` (in `Patches.cs`) is a tiny shared-state holder: `Shaken: armyId → Time.time` expiry,
+written by `PatchArmyTick` on field captain-death and read by the `run_away` delegate.
 
 ## Reflection access
 
@@ -117,7 +125,11 @@ null-checked invocation — if a game update renames a member, the patch degrade
 | `BaseSimObject.stats` | field | `PatchSetCitizenJob` (aptitude stats) |
 | `Actor.addExperience` | method | `PatchEndJob` |
 | `City.hasBuildingToBuild`, `hasStorageBuilding`, `hasBuildingType` | method | `PatchCitizenTasks` |
-| `City.kingdom`, `City.city_center` | field | `PatchFindTargetCity` |
+| `City.kingdom`, `City.city_center` | field | `PatchFindTargetCity`, `PatchArmyTick` (pillage) |
 | `Actor.hasWeapon` | method | `Tuning.ReworkRetreat` |
+| `Actor.attack_target`, `Actor.has_attack_target` | field | `PatchArmyTick` (focus fire) |
+| `Actor.data` | field | `PatchArmyTick` (pillage — `ActorData.loot` set) |
+| `BaseSimObject.addStatusEffect(string,float,bool)` | method | `PatchIncreaseKills` |
+| `Actor.getHit` | internal override | `PatchGetHit` (patched by name, `ref pDamage`) |
 
 See [patching-guide.md](patching-guide.md) for the conventions in detail.

@@ -57,11 +57,26 @@
 13. War tempo — `SimGlobals.init` postfix applies timeout/min-warriors/peace-years (PatchSimGlobalsInit)
 14. Training retune — `warrior_train_with_dummy` weight/cooldown (Tuning.cs)
 
+## Mod features (v0.3 — war tactics, 3 packs sharing `PatchArmyTick` on `Army.checkCaptainExistence` postfix; dispatch order: shock bookkeeping → focus fire → duels → pillage → desertion)
+
+15. Warscore surrender — `War.update` postfix block before stalemate: `max(deadA,deadD) >= WarscoreMinDeaths` && ratio >= `WarscoreRatio` → `war.lostWar(loser)` (main side; once-per-war via `_warscoreDone` — `lostWar`→`update()` reenters postfix)
+16. Focus fire — army units roll `FocusFireChance`/tick to `setAttackTarget` captain's live target (internal `attack_target`/`has_attack_target` → reflected)
+17. Home-field — `Actor.getHit` prefix (7 params): defender `inOwnCityBorders()` + attacker != null → `pDamage *= HomeFieldMult`
+18. Desertion — old non-total war (`>= DesertionWarYears`) + captain NOT inOwnCityBorders → random unit `stopBeingWarrior()`
+19. Pillage — captain in enemy-zone city → per-unit roll `PillageChance` steals `min(stockpile, 1..PillageAmount)` gold → `ActorData.loot`; units deposit at own city via `addResourcesToRandomStockpile` (`Actor.data` internal → reflected)
+20. Champion duels — scan `World.world.armies` (IEnumerable) for enemy captains within `DuelRadius`; pair dedup `_duelPairs` key `(min<<32)|(max&0xffffffff)` w/ 60s expiry; pass `DuelChance` → mutual `setAttackTarget`
+21. Morale shock — `__state` old captain rekt && `!isGroupInCityAndHaveLeader()` → `WarFx.Shaken[army.id] = Time.time + ShockSeconds`; `run_away` delegate multiplies rout threshold `× ShockFleeMult` (cap 0.95)
+22. Naval invasions — `check_warrior_transport` retune (`TaxiManager.newRequest` auto-merges same-kingdom/same-island) + `BehCityActorWarriorTaxiCheck.execute` postfix: on `BehResult.Stop`, follow embarked captain cross-island
+23. Berserker rage — `Actor.increaseKills` postfix: streak within `RageWindowSec` >= `RageKills` → `addStatusEffect("rage", RageDurationSec)` (reflected; `rage` = multiplier_damage 1.0, affects_mind, default 300s)
+
 ## Access gotchas
-- `internal` (use `AccessTools` reflection): `City.hasBuildingToBuild`, `hasStorageBuilding`, `hasBuildingType`, `City.kingdom`, `City.city_center`, `City._timer_warrior`, `City.tryToMakeWarrior`, `Actor.isProfession`, `Actor.addExperience`, `BaseSimObject.stats`
+- `internal` (use `AccessTools` reflection): `City.hasBuildingToBuild`, `hasStorageBuilding`, `hasBuildingType`, `City.kingdom`, `City.city_center`, `City._timer_warrior`, `City.tryToMakeWarrior`, `Actor.isProfession`, `Actor.addExperience`, `Actor.data`, `Actor.attack_target`, `Actor.has_attack_target`, `Actor.getHit` (internal override, 7 params), `BaseSimObject.stats`, `BaseSimObject.addStatusEffect(string,float,bool)` — note the StatusAsset overload is separate
+- `private` but patchable by name: `Actor.increaseKills`, `Army.findCaptain`, `CityBehCheckAttackZone.findTargetCity`
 - `hasCity()` is internal on Actor — use `a.city != null`
 - `Kingdom` warrior check is `hasEnemies()`/`wars.hasWars(k)` — no `hasWars()` on Kingdom
 - `isKingdomCiv()` is public on `BaseSimObject`; `Army.findCaptain`, `CityBehCheckAttackZone.findTargetCity` are private (patchable by name)
+- public & handy: `NanoObject.id`, `MetaObject.units`, `Actor.army`, `Actor.loot` (get-only — set via reflected `data`→`ActorData.loot`), `BaseSimObject.kingdom`/`current_tile`/`current_zone`, `Army.getKingdom()`, `Kingdom.getWars()`, `War.getDeadAttackers/Defenders`/`lostWar`, `TaxiManager.newRequest`, `World.world.armies` (IEnumerable)
+- free per-army-per-tick hook: postfix `Army.checkCaptainExistence` (called by `ArmyManager.update`); capture old captain in prefix `__state` to detect captain death before vanilla replaces it
 - Docs baseline: WorldBox 0.51.2 build 719 / NML 1.2.0.1 (lous12.github.io/worldbox-modding-docs, worldboxopenmods.gitbook.io/mod-tutorial-en)
 
 ## Verify

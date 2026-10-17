@@ -59,6 +59,39 @@ Every user-facing option (NML window → mod → **Mod Configuration**). Sources
 | `TrainWeight` | Warrior training urge | slider | 1.4 | 0–4 | `warrior_train_with_dummy` weight × |
 | `TrainCooldown` | Training cooldown (x vanilla) | slider | 0.6 | 0.05–1.0 | its cooldown × |
 
+## WarTactics
+
+v0.3 features — attrition systems, duels/morale shock, naval & rage. See
+[war-ai.md](war-ai.md) § War Tactics.
+
+| Id | Label | Type | Default | Range | Controls |
+|---|---|---|---|---|---|
+| `WarscoreSurrender` | Warscore surrender | switch | on | — | Lopsided kill counts force `lostWar` |
+| `WarscoreMinDeaths` | Min deaths for surrender | slider | 20 | 5–100 | Death threshold before ratio check |
+| `WarscoreRatio` | Kill ratio to force surrender | slider | 3.0 | 1.5–10 | max/min dead ratio needed |
+| `FocusFire` | Armies focus captain's target | switch | on | — | Units adopt captain's attack target |
+| `FocusFireChance` | Focus fire join chance (per tick) | slider | 0.15 | 0.02–0.5 | Per-unit per-tick convergence roll |
+| `HomeField` | Home-field advantage | switch | on | — | Damage reduction in own borders |
+| `HomeFieldMult` | Damage taken in own borders | slider | 0.8 | 0.3–1.0 | `pDamage` multiplier for defenders |
+| `DesertionWarYears` | Desertion war age (0=off) | slider | 8 | 0–30 | War age enabling desertion |
+| `DesertionChance` | Desertion chance (per tick) | slider | 0.005 | 0–0.1 | Gate roll per army tick |
+| `Pillage` | Armies pillage enemy cities | switch | on | — | Steal gold into `ActorData.loot` |
+| `PillageChance` | Pillage chance (per unit) | slider | 0.02 | 0–0.2 | Per-unit roll while in enemy city |
+| `PillageAmount` | Max gold per pillage | slider | 5 | 1–30 | Upper bound per successful roll |
+| `Duels` | Champion duels | switch | on | — | Captain-vs-captain encounters |
+| `DuelChance` | Duel chance per encounter | slider | 0.5 | 0.05–1.0 | One roll per army pair per 60s |
+| `DuelRadius` | Duel trigger radius (tiles) | slider | 8 | 2–20 | Captain proximity required |
+| `MoraleShock` | Captain death routs army | switch | on | — | `WarFx.Shaken` → boosted `run_away` |
+| `ShockSeconds` | Morale shock duration | slider | 30 | 5–120 | How long the army stays shocked |
+| `ShockFleeMult` | Shock flee threshold mult | slider | 2.5 | 1–5 | Rout threshold × while shocked (cap 0.95) |
+| `NavalInvasions` | Naval invasions | switch | on | — | Transport retune + follow-captain boarding |
+| `TransportWeight` | Transport urge | slider | 1.75 | 0–4 | `check_warrior_transport` weight × |
+| `TransportCooldown` | Transport cooldown (x vanilla) | slider | 0.5 | 0.05–1.0 | its cooldown × |
+| `BerserkerRage` | Kill-streak rage | switch | on | — | Streak → `rage` status |
+| `RageKills` | Kills to trigger rage | slider | 3 | 2–10 | Streak length required |
+| `RageWindowSec` | Kill streak window (sec) | slider | 30 | 5–120 | Time between kills to keep streak |
+| `RageDurationSec` | Rage duration (sec) | slider | 20 | 5–120 | Applied status duration |
+
 ## Debug
 
 | Id | Label | Default | Controls |

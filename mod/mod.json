@@ -1,8 +1,8 @@
 {
     "name": "Civ Mind Overhaul",
     "author": "alber",
-    "version": "0.1.0",
-    "description": "Gameplay overhaul for citizen AI: demand-driven job seeking, boosted job quotas under city pressure, faster expansion, tuned reproduction and socializing.",
+    "version": "0.3.0",
+    "description": "Gameplay overhaul for civ and war AI: demand-driven jobs, aptitude hiring, militia drafts, morale retreats, merit captains, smart war/siege targets, warscore surrender, focus fire, desertion, pillage, champion duels, morale shock, naval invasions, berserker rage.",
     "GUID": "devin.civmind",
     "targetGameBuild": 719,
     "Dependencies": [],

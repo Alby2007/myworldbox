@@ -35,6 +35,31 @@ namespace CivMindOverhaul
         public static float WarStalemateYears = 12f;
         public static float TrainWeight = 1.4f;
         public static float TrainCooldown = 0.6f;
+        public static bool WarscoreSurrender = true;
+        public static float WarscoreMinDeaths = 20f;
+        public static float WarscoreRatio = 3f;
+        public static bool FocusFire = true;
+        public static float FocusFireChance = 0.15f;
+        public static bool HomeField = true;
+        public static float HomeFieldMult = 0.8f;
+        public static float DesertionWarYears = 8f;
+        public static float DesertionChance = 0.005f;
+        public static bool Pillage = true;
+        public static float PillageChance = 0.02f;
+        public static int PillageAmount = 5;
+        public static bool Duels = true;
+        public static float DuelChance = 0.5f;
+        public static float DuelRadius = 8f;
+        public static bool MoraleShock = true;
+        public static float ShockSeconds = 30f;
+        public static float ShockFleeMult = 2.5f;
+        public static bool NavalInvasions = true;
+        public static float TransportWeight = 1.75f;
+        public static float TransportCooldown = 0.5f;
+        public static bool BerserkerRage = true;
+        public static int RageKills = 3;
+        public static float RageWindowSec = 30f;
+        public static float RageDurationSec = 20f;
         public static bool LogTuning = true;
 
         public static void Load(ModConfig pCfg)
@@ -74,6 +99,31 @@ namespace CivMindOverhaul
             WarStalemateYears = Slider(pCfg, "War", "WarStalemateYears", WarStalemateYears);
             TrainWeight = Slider(pCfg, "War", "TrainWeight", TrainWeight);
             TrainCooldown = Slider(pCfg, "War", "TrainCooldown", TrainCooldown);
+            WarscoreSurrender = Switch(pCfg, "WarTactics", "WarscoreSurrender", WarscoreSurrender);
+            WarscoreMinDeaths = Slider(pCfg, "WarTactics", "WarscoreMinDeaths", WarscoreMinDeaths);
+            WarscoreRatio = Slider(pCfg, "WarTactics", "WarscoreRatio", WarscoreRatio);
+            FocusFire = Switch(pCfg, "WarTactics", "FocusFire", FocusFire);
+            FocusFireChance = Slider(pCfg, "WarTactics", "FocusFireChance", FocusFireChance);
+            HomeField = Switch(pCfg, "WarTactics", "HomeField", HomeField);
+            HomeFieldMult = Slider(pCfg, "WarTactics", "HomeFieldMult", HomeFieldMult);
+            DesertionWarYears = Slider(pCfg, "WarTactics", "DesertionWarYears", DesertionWarYears);
+            DesertionChance = Slider(pCfg, "WarTactics", "DesertionChance", DesertionChance);
+            Pillage = Switch(pCfg, "WarTactics", "Pillage", Pillage);
+            PillageChance = Slider(pCfg, "WarTactics", "PillageChance", PillageChance);
+            PillageAmount = (int)Slider(pCfg, "WarTactics", "PillageAmount", PillageAmount);
+            Duels = Switch(pCfg, "WarTactics", "Duels", Duels);
+            DuelChance = Slider(pCfg, "WarTactics", "DuelChance", DuelChance);
+            DuelRadius = Slider(pCfg, "WarTactics", "DuelRadius", DuelRadius);
+            MoraleShock = Switch(pCfg, "WarTactics", "MoraleShock", MoraleShock);
+            ShockSeconds = Slider(pCfg, "WarTactics", "ShockSeconds", ShockSeconds);
+            ShockFleeMult = Slider(pCfg, "WarTactics", "ShockFleeMult", ShockFleeMult);
+            NavalInvasions = Switch(pCfg, "WarTactics", "NavalInvasions", NavalInvasions);
+            TransportWeight = Slider(pCfg, "WarTactics", "TransportWeight", TransportWeight);
+            TransportCooldown = Slider(pCfg, "WarTactics", "TransportCooldown", TransportCooldown);
+            BerserkerRage = Switch(pCfg, "WarTactics", "BerserkerRage", BerserkerRage);
+            RageKills = (int)Slider(pCfg, "WarTactics", "RageKills", RageKills);
+            RageWindowSec = Slider(pCfg, "WarTactics", "RageWindowSec", RageWindowSec);
+            RageDurationSec = Slider(pCfg, "WarTactics", "RageDurationSec", RageDurationSec);
             LogTuning = Switch(pCfg, "Debug", "LogTuning", LogTuning);
         }
 

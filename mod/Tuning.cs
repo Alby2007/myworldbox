@@ -63,6 +63,10 @@ namespace CivMindOverhaul
             Retune("try_to_read", Cfg.SocializeWeight, 1f);
 
             Retune("warrior_train_with_dummy", Cfg.TrainWeight, Cfg.TrainCooldown);
+            if (Cfg.NavalInvasions)
+            {
+                Retune("check_warrior_transport", Cfg.TransportWeight, Cfg.TransportCooldown);
+            }
             if (Cfg.MoraleRetreat)
             {
                 ReworkRetreat("run_away");
@@ -169,6 +173,14 @@ namespace CivMindOverhaul
                         t *= 0.5f;
                     }
                     t += a.warfare * 0.003f;
+                }
+                if (Cfg.MoraleShock && a.army != null)
+                {
+                    float shockExp;
+                    if (WarFx.Shaken.TryGetValue(a.army.id, out shockExp) && shockExp > Time.time)
+                    {
+                        t = Math.Min(0.95f, t * Cfg.ShockFleeMult);
+                    }
                 }
                 return a.getHealthRatio() < t;
             };

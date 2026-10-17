@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using ai.behaviours;
+using life.taxi;
 
 namespace CivMindOverhaul
 {
@@ -510,15 +511,35 @@ namespace CivMindOverhaul
     [HarmonyPatch(typeof(War), "update")]
     internal static class PatchWarUpdate
     {
+        private static readonly HashSet<long> _warscoreDone = new HashSet<long>();
+
         private static void Postfix(War __instance)
         {
             try
             {
-                if (Cfg.WarStalemateYears <= 0f || __instance.hasEnded() || __instance.isTotalWar())
+                if (__instance.hasEnded() || __instance.isTotalWar())
                 {
                     return;
                 }
-                if (__instance.getAge() < Cfg.WarStalemateYears)
+                if (Cfg.WarscoreSurrender && !_warscoreDone.Contains(__instance.id))
+                {
+                    int da = __instance.getDeadAttackers();
+                    int dd = __instance.getDeadDefenders();
+                    int big = Math.Max(da, dd);
+                    int small = Math.Min(da, dd);
+                    if (big >= Cfg.WarscoreMinDeaths && (small <= 0 || (float)big / small >= Cfg.WarscoreRatio))
+                    {
+                        Kingdom loser = (da > dd) ? __instance.getMainAttacker() : __instance.getMainDefender();
+                        if (loser != null && loser.isAlive())
+                        {
+                            _warscoreDone.Add(__instance.id);
+                            UnityEngine.Debug.Log("[CivMind] warscore surrender: " + loser.name + " (" + big + " vs " + small + " dead)");
+                            __instance.lostWar(loser);
+                            return;
+                        }
+                    }
+                }
+                if (Cfg.WarStalemateYears <= 0f || __instance.getAge() < Cfg.WarStalemateYears)
                 {
                     return;
                 }
@@ -542,6 +563,364 @@ namespace CivMindOverhaul
             catch (Exception e)
             {
                 UnityEngine.Debug.LogWarning("[CivMind] war update patch failed: " + e.Message);
+            }
+        }
+    }
+
+    internal static class WarFx
+    {
+        internal static readonly Dictionary<long, float> Shaken = new Dictionary<long, float>();
+    }
+
+    [HarmonyPatch(typeof(Army), "checkCaptainExistence")]
+    internal static class PatchArmyTick
+    {
+        private static readonly FieldInfo _attackTarget = AccessTools.Field(typeof(Actor), "attack_target");
+        private static readonly FieldInfo _hasAttackTarget = AccessTools.Field(typeof(Actor), "has_attack_target");
+        private static readonly FieldInfo _cityKingdom = AccessTools.Field(typeof(City), "kingdom");
+        private static readonly FieldInfo _actorData = AccessTools.Field(typeof(Actor), "data");
+        private static readonly Dictionary<long, float> _duelPairs = new Dictionary<long, float>();
+        private static float _nextPrune;
+
+        private static void Prefix(Army __instance, out Actor __state)
+        {
+            __state = __instance.getCaptain();
+        }
+
+        private static void Postfix(Army __instance, Actor __state)
+        {
+            try
+            {
+                TickMoraleShock(__instance, __state);
+                Actor cap = __instance.getCaptain();
+                if (cap == null || cap.isRekt() || cap.current_tile == null)
+                {
+                    return;
+                }
+                TickFocusFire(__instance, cap);
+                TickDuels(__instance, cap);
+                TickPillage(__instance, cap);
+                TickDesertion(__instance, cap);
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[CivMind] army tick failed: " + e.Message);
+            }
+        }
+
+        private static void TickMoraleShock(Army pArmy, Actor pOldCaptain)
+        {
+            float now = UnityEngine.Time.time;
+            if (now >= _nextPrune)
+            {
+                _nextPrune = now + 30f;
+                Prune(WarFx.Shaken, now);
+                Prune(_duelPairs, now);
+            }
+            if (!Cfg.MoraleShock || pOldCaptain == null || !pOldCaptain.isRekt() || pArmy.isGroupInCityAndHaveLeader())
+            {
+                return;
+            }
+            WarFx.Shaken[pArmy.id] = now + Cfg.ShockSeconds;
+            UnityEngine.Debug.Log("[CivMind] morale shock: " + pArmy.name + " lost " + pOldCaptain.getName());
+        }
+
+        private static void Prune(Dictionary<long, float> pDict, float pNow)
+        {
+            List<long> dead = null;
+            foreach (KeyValuePair<long, float> kv in pDict)
+            {
+                if (kv.Value <= pNow)
+                {
+                    if (dead == null)
+                    {
+                        dead = new List<long>();
+                    }
+                    dead.Add(kv.Key);
+                }
+            }
+            if (dead != null)
+            {
+                for (int i = 0; i < dead.Count; i++)
+                {
+                    pDict.Remove(dead[i]);
+                }
+            }
+        }
+
+        private static void TickFocusFire(Army pArmy, Actor pCaptain)
+        {
+            if (!Cfg.FocusFire || _attackTarget == null || _hasAttackTarget == null)
+            {
+                return;
+            }
+            if (!(bool)_hasAttackTarget.GetValue(pCaptain))
+            {
+                return;
+            }
+            if (!(_attackTarget.GetValue(pCaptain) is Actor target) || !target.isAlive())
+            {
+                return;
+            }
+            for (int i = 0; i < pArmy.units.Count; i++)
+            {
+                Actor u = pArmy.units[i];
+                if (u == pCaptain || u.isRekt() || !u.isArmyGroupWarrior() || u.isInsideSomething())
+                {
+                    continue;
+                }
+                if ((bool)_hasAttackTarget.GetValue(u) && _attackTarget.GetValue(u) == target)
+                {
+                    continue;
+                }
+                if (Randy.randomChance(Cfg.FocusFireChance))
+                {
+                    u.setAttackTarget(target);
+                }
+            }
+        }
+
+        private static void TickDuels(Army pArmy, Actor pCaptain)
+        {
+            if (!Cfg.Duels || pCaptain.kingdom == null || pCaptain.isInsideSomething() || !Randy.randomChance(0.1f))
+            {
+                return;
+            }
+            float now = UnityEngine.Time.time;
+            float radius2 = Cfg.DuelRadius * Cfg.DuelRadius;
+            foreach (Army other in World.world.armies)
+            {
+                if (other == pArmy || !other.hasCaptain())
+                {
+                    continue;
+                }
+                Actor ocap = other.getCaptain();
+                if (ocap == null || ocap.isRekt() || ocap.isInsideSomething() || ocap.kingdom == null)
+                {
+                    continue;
+                }
+                if (!ocap.kingdom.isEnemy(pCaptain.kingdom))
+                {
+                    continue;
+                }
+                if ((float)Toolbox.SquaredDistTile(pCaptain.current_tile, ocap.current_tile) > radius2)
+                {
+                    continue;
+                }
+                long lo = Math.Min(pArmy.id, other.id);
+                long hi = Math.Max(pArmy.id, other.id);
+                long key = (lo << 32) | (hi & 4294967295L);
+                float exp;
+                if (_duelPairs.TryGetValue(key, out exp) && exp > now)
+                {
+                    continue;
+                }
+                _duelPairs[key] = now + 60f;
+                if (Randy.randomChance(Cfg.DuelChance))
+                {
+                    pCaptain.setAttackTarget(ocap);
+                    ocap.setAttackTarget(pCaptain);
+                    UnityEngine.Debug.Log("[CivMind] duel: " + pCaptain.getName() + " vs " + ocap.getName());
+                }
+            }
+        }
+
+        private static void TickPillage(Army pArmy, Actor pCaptain)
+        {
+            if (!Cfg.Pillage || _actorData == null || _cityKingdom == null)
+            {
+                return;
+            }
+            TileZone zone = pCaptain.current_zone;
+            City zoneCity = ((zone == null) ? null : zone.city);
+            Kingdom zoneKingdom = ((zoneCity == null) ? null : (_cityKingdom.GetValue(zoneCity) as Kingdom));
+            bool enemyCity = zoneKingdom != null && pCaptain.kingdom != null && zoneKingdom.isEnemy(pCaptain.kingdom);
+            bool homeZone = pCaptain.inOwnCityBorders();
+            if (!enemyCity && !homeZone)
+            {
+                return;
+            }
+            for (int i = 0; i < pArmy.units.Count; i++)
+            {
+                Actor u = pArmy.units[i];
+                if (u.isRekt())
+                {
+                    continue;
+                }
+                ActorData d = _actorData.GetValue(u) as ActorData;
+                if (d == null)
+                {
+                    continue;
+                }
+                if (homeZone && d.loot > 0 && u.city != null && u.inOwnCityBorders())
+                {
+                    u.city.addResourcesToRandomStockpile("gold", d.loot);
+                    d.loot = 0;
+                }
+                else if (enemyCity && u.isAlive() && Randy.randomChance(Cfg.PillageChance))
+                {
+                    int amt = Math.Min(zoneCity.getResourcesAmount("gold"), Randy.randomInt(1, Cfg.PillageAmount + 1));
+                    if (amt > 0)
+                    {
+                        zoneCity.takeResource("gold", amt);
+                        d.loot += amt;
+                    }
+                }
+            }
+        }
+
+        private static void TickDesertion(Army pArmy, Actor pCaptain)
+        {
+            if (Cfg.DesertionWarYears <= 0f || !Randy.randomChance(Cfg.DesertionChance) || pCaptain.inOwnCityBorders())
+            {
+                return;
+            }
+            Kingdom k = pArmy.getKingdom();
+            if (k == null)
+            {
+                return;
+            }
+            foreach (War w in k.getWars())
+            {
+                if (w.getAge() < Cfg.DesertionWarYears || w.isTotalWar())
+                {
+                    continue;
+                }
+                if (pArmy.units.Count > 0)
+                {
+                    Actor pick = Randy.getRandom(pArmy.units);
+                    if (pick != null && pick.isAlive() && pick != pCaptain)
+                    {
+                        pick.stopBeingWarrior();
+                        UnityEngine.Debug.Log("[CivMind] deserted: " + pick.getName() + " (" + pArmy.name + ")");
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Actor), "getHit")]
+    internal static class PatchGetHit
+    {
+        private static bool Prefix(Actor __instance, ref float pDamage, bool pFlash, AttackType pAttackType, BaseSimObject pAttacker, bool pSkipIfShake, bool pMetallicWeapon, bool pCheckDamageReduction)
+        {
+            if (Cfg.HomeField)
+            {
+                try
+                {
+                    if (pAttacker != null && __instance.inOwnCityBorders())
+                    {
+                        pDamage *= Cfg.HomeFieldMult;
+                    }
+                }
+                catch
+                {
+                }
+            }
+            return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(BehCityActorWarriorTaxiCheck), "execute")]
+    internal static class PatchWarriorTaxi
+    {
+        private static void Postfix(Actor pActor, BehResult __result)
+        {
+            if (!Cfg.NavalInvasions || __result != BehResult.Stop)
+            {
+                return;
+            }
+            try
+            {
+                Army army = pActor.army;
+                if (army == null || !pActor.isArmyGroupWarrior() || !army.hasCaptain())
+                {
+                    return;
+                }
+                Actor cap = army.getCaptain();
+                if (cap == null || cap.isRekt() || !cap.isInsideSomething() || cap.current_tile.isSameIsland(pActor.current_tile))
+                {
+                    return;
+                }
+                TaxiManager.newRequest(pActor, cap.current_tile);
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[CivMind] warrior taxi failed: " + e.Message);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Actor), "increaseKills")]
+    internal static class PatchIncreaseKills
+    {
+        private class Streak
+        {
+            public int Count;
+            public float Last;
+        }
+
+        private static readonly Dictionary<long, Streak> _streaks = new Dictionary<long, Streak>();
+        private static readonly MethodInfo _addStatus = AccessTools.Method(typeof(BaseSimObject), "addStatusEffect", new Type[]
+        {
+            typeof(string),
+            typeof(float),
+            typeof(bool)
+        });
+        private static float _nextPrune;
+
+        private static void Postfix(Actor __instance)
+        {
+            if (!Cfg.BerserkerRage || _addStatus == null)
+            {
+                return;
+            }
+            try
+            {
+                float now = UnityEngine.Time.time;
+                long id = __instance.id;
+                Streak s;
+                if (!_streaks.TryGetValue(id, out s))
+                {
+                    s = new Streak();
+                    _streaks[id] = s;
+                }
+                s.Count = ((now - s.Last < Cfg.RageWindowSec) ? (s.Count + 1) : 1);
+                s.Last = now;
+                if (s.Count >= Cfg.RageKills)
+                {
+                    s.Count = 0;
+                    _addStatus.Invoke(__instance, new object[] { "rage", Cfg.RageDurationSec, true });
+                    UnityEngine.Debug.Log("[CivMind] rage: " + __instance.getName());
+                }
+                if (now >= _nextPrune)
+                {
+                    _nextPrune = now + 60f;
+                    List<long> dead = null;
+                    foreach (KeyValuePair<long, Streak> kv in _streaks)
+                    {
+                        if (now - kv.Value.Last > Cfg.RageWindowSec)
+                        {
+                            if (dead == null)
+                            {
+                                dead = new List<long>();
+                            }
+                            dead.Add(kv.Key);
+                        }
+                    }
+                    if (dead != null)
+                    {
+                        for (int i = 0; i < dead.Count; i++)
+                        {
+                            _streaks.Remove(dead[i]);
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[CivMind] rage patch failed: " + e.Message);
             }
         }
     }

@@ -22,8 +22,19 @@ armies rout when beaten, and wars actually end.
 - **Merit captains** — the best warrior leads the army, not the nearest
 - **Smarter war & siege targets** — kingdoms and cities pick targets weighing distance and defender strength
 - **Stalemate peace** — wars with no fighting auto-end after a configurable age
+- **Warscore surrender** — lopsided kill counts force the losing side to surrender
 - **War tempo tuning** — war timeout, minimum warriors, and rematch cooldown are configurable
 - **Training retune** — warriors use training dummies more often
+
+### War tactics (v0.3)
+- **Focus fire** — army members converge on the captain's target
+- **Home-field advantage** — defenders inside own city borders take reduced damage
+- **Desertion** — armies stuck in long wars abroad bleed deserters
+- **Pillage** — soldiers loot enemy city gold and haul it home to their stockpiles
+- **Champion duels** — enemy captains near each other duel (one roll per encounter)
+- **Morale shock** — kill the captain in the field and his army routs
+- **Naval invasions** — warriors pile into transport boats for overseas assaults, following the captain
+- **Berserker rage** — kill streaks grant a short `rage` status (double damage)
 
 Every feature is toggleable/tunable in-game: **NML window → mod → Mod Configuration** (~30 options).
 See [docs/config-reference.md](docs/config-reference.md) for the full list.

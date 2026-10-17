@@ -14,6 +14,7 @@ namespace CivMindOverhaul
         private static readonly Dictionary<string, int> _origCooldown = new Dictionary<string, int>();
         private static readonly Dictionary<string, DecisionActionWeight> _origCustom = new Dictionary<string, DecisionActionWeight>();
         private static PlotCheckerDelegate _origAllianceDestroyCheck;
+        private static bool _peacePlotDone;
 
         public static void TryApply()
         {
@@ -334,53 +335,110 @@ namespace CivMindOverhaul
 
         internal static void WrapPlots()
         {
-            if (!Cfg.AntiHegemon || _origAllianceDestroyCheck != null)
+            if (Cfg.AntiHegemon && _origAllianceDestroyCheck == null)
             {
-                return;
-            }
-            PlotAsset destroy = AssetManager.plots_library == null ? null : AssetManager.plots_library.get("alliance_destroy") as PlotAsset;
-            if (destroy == null || destroy.check_is_possible == null)
-            {
-                return;
-            }
-            _origAllianceDestroyCheck = destroy.check_is_possible;
-            PlotCheckerDelegate orig = _origAllianceDestroyCheck;
-            destroy.check_is_possible = delegate(Actor a)
-            {
-                if (orig(a))
+                PlotAsset destroy = AssetManager.plots_library == null ? null : AssetManager.plots_library.get("alliance_destroy") as PlotAsset;
+                if (destroy != null && destroy.check_is_possible != null)
                 {
-                    return true;
-                }
-                try
-                {
-                    Kingdom k = a.kingdom;
-                    if (k == null || !k.hasAlliance() || k.hasEnemies())
+                    _origAllianceDestroyCheck = destroy.check_is_possible;
+                    PlotCheckerDelegate orig = _origAllianceDestroyCheck;
+                    destroy.check_is_possible = delegate(Actor a)
                     {
-                        return false;
-                    }
-                    Alliance al = k.getAlliance();
-                    if (al == null || al.isForcedType() || al.getAge() < 10)
-                    {
-                        return false;
-                    }
-                    if (Date.getYearsSince(al.data.timestamp_member_joined) < 10.0)
-                    {
-                        return false;
-                    }
-                    foreach (Kingdom m in al.kingdoms_hashset)
-                    {
-                        if (m.isSupreme())
+                        if (orig(a))
                         {
                             return true;
                         }
-                    }
+                        try
+                        {
+                            Kingdom k = a.kingdom;
+                            if (k == null || !k.hasAlliance() || k.hasEnemies())
+                            {
+                                return false;
+                            }
+                            Alliance al = k.getAlliance();
+                            if (al == null || al.isForcedType() || al.getAge() < 10)
+                            {
+                                return false;
+                            }
+                            if (Date.getYearsSince(al.data.timestamp_member_joined) < 10.0)
+                            {
+                                return false;
+                            }
+                            foreach (Kingdom m in al.kingdoms_hashset)
+                            {
+                                if (m.isSupreme())
+                                {
+                                    return true;
+                                }
+                            }
+                        }
+                        catch
+                        {
+                        }
+                        return false;
+                    };
+                    Log("wrapped alliance_destroy: members may break hegemon blocs");
                 }
-                catch
+            }
+            if (Cfg.PeacePlots && !_peacePlotDone)
+            {
+                PlotAsset stop = AssetManager.plots_library == null ? null : AssetManager.plots_library.get("attacker_stop_war") as PlotAsset;
+                if (stop != null)
                 {
+                    _peacePlotDone = true;
+                    stop.min_diplomacy = (int)Cfg.PeacePlotDiplo;
+                    stop.money_cost = (int)Cfg.PeacePlotCost;
+                    stop.try_to_start_advanced = delegate(Actor pActor, PlotAsset pPlotAsset, bool pForced)
+                    {
+                        Kingdom kingdom = pActor.kingdom;
+                        War war = null;
+                        foreach (War w in kingdom.getWars(pRandom: true))
+                        {
+                            if (w.getAge() > SimGlobals.m.minimum_age_before_war_stop && w.getAsset().can_end_with_plot && w.isAttacker(kingdom))
+                            {
+                                int atkW = w.countAttackersWarriors();
+                                int defW = w.countDefendersWarriors();
+                                if (!w.areDefendersGettingCaptured() && !w.areAttackersAttackingAnotherCity() && !w.areAttackersGettingCaptured() && !w.areDefendersAttackingAnotherCity() && (atkW <= 100 || defW <= 100))
+                                {
+                                    if (w.isAttacker(kingdom))
+                                    {
+                                        if (atkW < defW * Cfg.PeacePlotRatio)
+                                        {
+                                            continue;
+                                        }
+                                    }
+                                    else if (defW < atkW * Cfg.PeacePlotRatio)
+                                    {
+                                        continue;
+                                    }
+                                    war = w;
+                                    break;
+                                }
+                            }
+                        }
+                        if (war == null)
+                        {
+                            return false;
+                        }
+                        foreach (Plot p3 in World.world.plots)
+                        {
+                            if (p3.isActive() && p3.isSameType(pPlotAsset) && p3.target_war == war)
+                            {
+                                pActor.setPlot(p3);
+                                return true;
+                            }
+                        }
+                        Plot plot = World.world.plots.newPlot(pActor, pPlotAsset, pForced);
+                        plot.target_war = war;
+                        if (!plot.checkInitiatorAndTargets())
+                        {
+                            UnityEngine.Debug.Log("tryPlotStopWar is missing start requirements");
+                        }
+                        return true;
+                    };
+                    Log("retuned attacker_stop_war: diplo " + (int)Cfg.PeacePlotDiplo + ", cost " + (int)Cfg.PeacePlotCost + ", ratio " + Cfg.PeacePlotRatio);
                 }
-                return false;
-            };
-            Log("wrapped alliance_destroy: members may break hegemon blocs");
+            }
         }
 
         private static void ReworkRetreat(string pId)
@@ -417,6 +475,10 @@ namespace CivMindOverhaul
                     if (cap != null && !cap.isRekt() && cap.current_tile != null && (float)Toolbox.SquaredDistTile(a.current_tile, cap.current_tile) <= Cfg.AuraRadius * Cfg.AuraRadius)
                     {
                         t *= Cfg.AuraFleeMult;
+                        if (Cfg.ArmyVeterancy && WarFx.VetArmies.ContainsKey(a.army.id))
+                        {
+                            t /= Cfg.VetArmyAura;
+                        }
                     }
                 }
                 if (Cfg.MoraleShock && a.army != null)
@@ -424,7 +486,12 @@ namespace CivMindOverhaul
                     float shockExp;
                     if (WarFx.Shaken.TryGetValue(a.army.id, out shockExp) && shockExp > Time.time)
                     {
-                        t = Math.Min(0.95f, t * Cfg.ShockFleeMult);
+                        float mult = Cfg.ShockFleeMult;
+                        if (Cfg.ArmyVeterancy && WarFx.VetArmies.ContainsKey(a.army.id))
+                        {
+                            mult = 1f + (mult - 1f) * (1f - Cfg.VetShockResist);
+                        }
+                        t = Math.Min(0.95f, t * mult);
                     }
                 }
                 return a.getHealthRatio() < t;

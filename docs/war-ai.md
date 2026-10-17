@@ -529,3 +529,133 @@ economic siege as a war layer.
 is at peace while `World.world.wars.getActiveWars()` is non-empty gets
 `× WarProfiteerMult` (1.75) — neutral docks flood both belligerents' markets and
 skim the trade income (52) while empires bleed.
+
+# War Pack 4 — Combat Depth & Statecraft (features 65–83)
+
+Combat micro lives inside `Actor.getHit` (prefix writes `pDamage`/
+`pCheckDamageReduction` by Harmony ref-writeback); army behavior rides the
+existing `Army.checkCaptainExistence` tick; statecraft extends the war/diplomacy
+patches.
+
+## 65. Crits & dodges
+
+`PatchGetHit` rolls **dodge first** — defender `DodgeChance` (0.06) +
+`accuracy × CritDodgeStatScale` → `pDamage = 0`. Then **crit** on the attacker:
+`CritChance` (0.08) + accuracy scaling → `pDamage × CritMult` (2). Skilled
+fighters land bigger hits and slip incoming ones.
+
+## 66. Armor penetration
+
+Attackers with `warfare ≥ PenWarfare` (8) roll `PenChance` (0.35) to set
+`pCheckDamageReduction = false` — vanilla's entire armor/resist reduction is
+skipped. Deliberately conservative: this bypass is total, not a percentage.
+
+## 67. Stagger
+
+Hits dealing ≥ `StaggerDmgPct` (25%) of the target's max health roll
+`StaggerChance` (0.5) → `addStatusEffect("stunned", StaggerSeconds)`. Heavy
+blows interrupt — big weapons now control fights, not just end them faster.
+
+## 68. Finish wounded
+
+`PatchFindTarget` on `BaseSimObject.findEnemyObjectTarget` — when the vanilla
+pick is a healthy actor, rescan `EnemiesFinder.findEnemiesFrom` (same-frame
+cache) for an enemy under `FinishHealth` (35%) within `FinishRadius` that
+`canAttackTarget` accepts → swap. Armies execute the wounded instead of trading
+fresh blows.
+
+## 69. Wounded rotation
+
+`TickRotation` (army tick): idle warriors — no attack target — under
+`RotateHealth` (30%) demobilize with `RotateChance` per tick. Bloodied soldiers
+rotate home to heal instead of dying in the second wave.
+
+## 70. Veteran combat specials
+
+`PatchCombatInit` wraps every `CombatActionAsset.can_do_action`: actors with
+`kills ≥ VetSpecKills` (10) get `VetSpecBypass` (50%) chance to use a combat
+action even when its normal check fails — veterans improvise.
+
+## 71. Formations & kiting
+
+`TickFormations`: ranged-weapon units (`WeaponType.Range` on the equipped item)
+whose target is inside `KiteRange` (7 tiles) step to the neighbor tile farthest
+from the enemy — only when they already have an attack target, so marches are
+untouched. Archers skirmish instead of eating melee charges.
+
+## 72. Relief marches
+
+`TickRelief`: when the captain has no attack target, scan the kingdom for a city
+being captured or in danger on the same island → `ReliefChance` (0.5) writes
+every unit's `beh_tile_target` to the threatened city. Idle armies answer
+distant sieges. Logged: `relief march:`.
+
+## 73. Army veterancy
+
+`TickVeterancy`: armies whose living units average `≥ VetArmyKills` (5) are
+promoted into `WarFx.VetArmies`. Veteran armies get amplified captain auras
+(`t /= VetArmyAura`) and softened morale shock (`VetShockResist` lerps
+`ShockFleeMult` toward 1) in `ReworkRetreat`. Logged: `veteran army:`.
+
+## 74. Veteran retention
+
+`PatchWarriorStillOk` postfix: when vanilla decides a warrior should demobilize
+(army over limit / food shortage), units with `kills ≥ VetKeepKills` (8) are
+retained at `VetKeepChance` (70%) — veterans survive the drawdown.
+
+## 75. Combined arms
+
+`PatchGiveItem` supplant: when a *wartime* army is melee-heavy
+(`melee > ranged × (1-RangeShare)/RangeShare`), the free `giveItem` call picks
+from a ranged-only sublist instead of the full storage — replicating vanilla's
+slot/value-check/replacement body exactly (`_storage_version` bump included).
+Armies converge toward `RangeShare` (40%) archers.
+
+## 76. Siege momentum
+
+`PatchUpdateCapture` postfix on private `City.updateCapture(float)`: each
+capturing unit past the first adds `MomentumPerUnit` (0.05) × elapsed to
+`_capture_ticks`, capped at **10 effective attackers**. Mass assaults crack
+walls faster; the clamp keeps single-defender math intact.
+
+## 77. Separate peace
+
+`PatchWarUpdate`: wars older than `SepPeaceYears` roll `SepPeaceChance` — a
+non-main participant whose warriors fell below `SepPeaceShare` (25%) of its
+main-belligerent's calls `War.leaveWar` and exits. Logged: `separate peace:`.
+
+## 78. Peace-plot retune
+
+`Tuning.WrapPlots` rewrites `attacker_stop_war`: `min_diplomacy`/`money_cost`/
+the attacker-vs-defender warrior dominance ratio all move to config, and the
+vanilla **plot-reuse loop** (join an existing identical plot targeting the same
+war instead of duplicating it) is preserved verbatim. Cheaper peace, no spam.
+
+## 79. Two-front wars
+
+`PatchIsWarNeeded`: when `isWarNeeded` returned false *only* because the kingdom
+is already at war — supreme kingdoms with enemies re-check the cheap gates
+(capital, `WarMinWarriors`, timeout) and open a second front at
+`TwoFrontChance` (30%). Hegemons overextend. Logged: `two-front war:`.
+
+## 80. Border friction
+
+`PatchOpinionInit` wraps `opinion_borders.calc`: the vanilla ±25 border opinion
+is multiplied by `BorderFrictionMult` (2) — neighbors rub harder, distant
+kingdoms drift further apart.
+
+## 81. Truce-break reputation
+
+`PatchStartWar` on `DiplomacyManager.startWar`: attacking inside
+`minimum_years_between_wars` of a war end stamps `WarFx.TruceBreak[attacker]`.
+`PatchOpinionInit` injects `opinion_truce_breaker` — every kingdom reads the
+breaker at −`TruceBreakOpinion` (60) for `TruceBreakYears` (15). Logged:
+`truce broken:`.
+
+## 82. Installment tribute
+
+Decisive war ends (`PatchEndWar`) → `WarFx.Tribute[loser]` records
+`(winner, expiry, lastPaid)`. The loser's **capital** pays
+`min(TributeAnnual, gold)` yearly via `PatchCheckLoyalty` into the winner's
+capital stockpile — defeated realms bleed for `TributeYears` (10). Logged:
+`tribute:` / `tribute deal:`.

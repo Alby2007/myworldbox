@@ -215,6 +215,82 @@ v0.6–v0.9 features — loot/tax economy, item production, trade boats, plunder
 | `WarProfiteer` | Neutrals trade more during wars | switch | on | — | Peaceful boats × while wars rage |
 | `WarProfiteerMult` | War profiteer trade (x) | slider | 1.75 | 1–4 | `boat_trading` weight × for neutrals |
 
+## Combat
+
+v1.0 combat micro — all rolls inside `Actor.getHit` except finish-wounded (target selection) and veteran specials (action gates).
+
+| Id | Label | Type | Default | Range | Controls |
+|---|---|---|---|---|---|
+| `CombatCrits` | Critical hits & dodges | switch | on | — | Master switch for crit/dodge rolls |
+| `CritChance` | Base crit chance | slider | 0.08 | 0–0.5 | Attacker crit probability |
+| `CritMult` | Crit damage (x) | slider | 2 | 1–5 | Damage × on crit |
+| `DodgeChance` | Base dodge chance | slider | 0.06 | 0–0.5 | Defender zero-damage probability |
+| `CritDodgeStatScale` | Accuracy bonus to crit/dodge | slider | 0.004 | 0–0.02 | `accuracy` stat × this, added to both rolls |
+| `ArmorPen` | Veterans pierce armor | switch | on | — | Master switch for armor penetration |
+| `PenWarfare` | Warfare needed to pierce | slider | 8 | 0–25 | Min `warfare` to roll penetration |
+| `PenChance` | Armor pierce chance | slider | 0.35 | 0–1 | Sets `pCheckDamageReduction=false` — bypasses ALL reduction |
+| `Stagger` | Heavy hits stagger | switch | on | — | Master switch for stagger |
+| `StaggerDmgPct` | Stagger damage (% max hp) | slider | 0.25 | 0.05–0.8 | Hit must deal ≥ this fraction of max health |
+| `StaggerSeconds` | Stagger duration (s) | slider | 1.5 | 0.5–10 | `stunned` status length |
+| `StaggerChance` | Stagger chance | slider | 0.5 | 0–1 | Roll when damage threshold met |
+| `FinishWounded` | Focus wounded targets | switch | on | — | Target-swap postfix on `findEnemyObjectTarget` |
+| `FinishHealth` | Wounded health threshold | slider | 0.35 | 0.05–0.8 | Enemy health ratio counted as "wounded" |
+| `FinishRadius` | Wounded search radius | slider | 12 | 2–40 | Tile radius for the swap search |
+| `VetSpecials` | Veteran combat moves | switch | on | — | Wrap `CombatActionAsset.can_do_action` |
+| `VetSpecKills` | Kills to unlock specials | slider | 10 | 3–50 | `data.kills` required |
+| `VetSpecBypass` | Special bypass chance | slider | 0.5 | 0–1 | Chance a failed `can_do_action` still passes |
+
+## Armies
+
+v1.0 army behavior — all army ticks run inside `Army.checkCaptainExistence`.
+
+| Id | Label | Type | Default | Range | Controls |
+|---|---|---|---|---|---|
+| `WoundedRotation` | Rotate wounded out | switch | on | — | Idle wounded warriors demobilize |
+| `RotateHealth` | Wounded rotation threshold | slider | 0.3 | 0.05–0.8 | Health ratio that triggers rotation |
+| `RotateChance` | Rotation chance per tick | slider | 0.3 | 0–1 | Roll per army tick |
+| `Formations` | Formations & kiting | switch | on | — | Ranged units step away from near targets |
+| `KiteRange` | Kite trigger distance | slider | 7 | 2–20 | Squared-tile trigger for ranged retreat |
+| `KiteChance` | Kite chance per tick | slider | 0.4 | 0–1 | Roll per engaged ranged unit |
+| `SiegeRelief` | Relief marches | switch | on | — | Idle armies march to threatened cities |
+| `ReliefChance` | Relief march chance | slider | 0.5 | 0–1 | Roll per army tick when a city needs relief |
+| `ArmyVeterancy` | Army veterancy | switch | on | — | Veteran-army promotion |
+| `VetArmyKills` | Avg kills for veteran army | slider | 5 | 1–30 | Mean kills across living units |
+| `VetShockResist` | Veteran shock resist | slider | 0.5 | 0–1 | Softens `ShockFleeMult` toward 1 |
+| `VetArmyAura` | Veteran aura boost (x) | slider | 1.5 | 1–4 | Divides flee threshold under the captain aura |
+| `VetRetention` | Retain veterans | switch | on | — | Veterans survive demobilization checks |
+| `VetKeepKills` | Kills for veteran status | slider | 8 | 1–30 | `data.kills` required |
+| `VetKeepChance` | Veteran retention chance | slider | 0.7 | 0–1 | Roll when vanilla tries to demobilize |
+| `CombinedArms` | Combined-arms arming | switch | on | — | Wartime melee-heavy armies draw ranged gear |
+| `RangeShare` | Target ranged share | slider | 0.4 | 0.1–0.9 | Preferred ranged fraction of the army |
+| `SiegeMomentum` | Siege momentum | switch | on | — | Extra attackers accelerate capture |
+| `MomentumPerUnit` | Capture boost per unit | slider | 0.05 | 0–0.5 | `_capture_ticks` bonus × elapsed per unit past 1st; capped at 10 effective |
+
+## Statecraft
+
+v1.0 diplomacy layer — war exits, peace plots, and reputation.
+
+| Id | Label | Type | Default | Range | Controls |
+|---|---|---|---|---|---|
+| `SeparatePeace` | Separate peace | switch | on | — | Collapsing participants leave wars early |
+| `SepPeaceYears` | Min war age for exit | slider | 6 | 1–30 | War must be this old |
+| `SepPeaceShare` | Collapse threshold (warrior share) | slider | 0.25 | 0.05–1 | Warrior count below this fraction of the main belligerent |
+| `SepPeaceChance` | Exit chance per tick | slider | 0.1 | 0–1 | Roll per `War.update` |
+| `PeacePlots` | Retuned peace plots | switch | on | — | `attacker_stop_war` parameter + reuse-loop rewrite |
+| `PeacePlotDiplo` | Peace plot min diplomacy | slider | 8 | 0–20 | Replaces vanilla `min_diplomacy` |
+| `PeacePlotCost` | Peace plot gold cost | slider | 20 | 0–100 | Replaces vanilla `money_cost` |
+| `PeacePlotRatio` | Peace plot dominance ratio | slider | 2 | 1–5 | Warrior dominance required to sue for peace |
+| `TwoFronts` | Two-front wars | switch | on | — | Supreme kingdoms can open second fronts |
+| `TwoFrontChance` | Second front chance | slider | 0.3 | 0–1 | Roll when the only blocker is an active war |
+| `BorderFriction` | Border friction opinion | switch | on | — | Wraps `opinion_borders.calc` |
+| `BorderFrictionMult` | Border opinion (x) | slider | 2 | 0–4 | Multiplies the vanilla ±25 border opinion |
+| `TruceBreak` | Truce-break reputation | switch | on | — | Marks early re-declarations + opinion penalty |
+| `TruceBreakYears` | Reputation lasts (years) | slider | 15 | 1–50 | How long `opinion_truce_breaker` applies |
+| `TruceBreakOpinion` | Opinion penalty | slider | 60 | 0–200 | Negative opinion against the breaker |
+| `TributeInstallments` | Installment tribute | switch | on | — | Yearly gold from loser capital to winner |
+| `TributeYears` | Tribute duration (years) | slider | 10 | 1–50 | Deal length after a decisive win |
+| `TributeAnnual` | Tribute per year (gold) | slider | 15 | 0–100 | `min(this, available gold)` per year |
+
 ## Debug
 
 | Id | Label | Default | Controls |

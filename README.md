@@ -80,7 +80,26 @@ armies rout when beaten, and wars actually end.
 - **Embargoes** — alliance members' boats boycott any ally's enemy docks
 - **War profiteers** — neutral dock cities trade harder while others bleed
 
-Every feature is toggleable/tunable in-game: **NML window → mod → Mod Configuration** (~105 options).
+### Combat depth & statecraft (v1.0)
+
+- **Combat micro** — crits and accuracy-scaled dodges, veteran armor penetration, heavy-hit staggers
+- **Finish wounded** — armies preferentially execute wounded enemies in reach
+- **Wounded rotation** — idle bloodied warriors rotate home to heal
+- **Veteran specials** — battle-hardened soldiers bypass combat-action gates
+- **Formations & kiting** — ranged units skirmish away from closing melee
+- **Relief marches** — idle armies march to relieve besieged cities
+- **Army veterancy** — veteran armies resist morale shock and rally harder
+- **Veteran retention** — high-kill soldiers survive demobilization
+- **Combined arms** — melee-heavy armies preferentially draw ranged gear
+- **Siege momentum** — mass assaults fill capture bars faster
+- **Separate peace** — collapsing allies bail out of lost wars
+- **Peace plots** — `attacker_stop_war` retuned, no duplicate-plot spam
+- **Two-front wars** — supreme kingdoms can open a second front
+- **Border friction** — neighbor opinion penalty amplified
+- **Truce-break reputation** — early re-declarations cost global opinion
+- **Installment tribute** — losers pay the victor yearly for a decade
+
+Every feature is toggleable/tunable in-game: **NML window → mod → Mod Configuration** (~160 options).
 See [docs/config-reference.md](docs/config-reference.md) for the full list.
 
 ## Install

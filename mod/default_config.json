@@ -973,6 +973,361 @@
             "MaxFloatVal": 5.0
         }
     ],
+    "Combat": [
+        {
+            "Id": "CombatCrits",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "CritChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.08,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 0.5
+        },
+        {
+            "Id": "CritMult",
+            "Type": "SLIDER",
+            "FloatVal": 2.0,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 5.0
+        },
+        {
+            "Id": "DodgeChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.06,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 0.5
+        },
+        {
+            "Id": "CritDodgeStatScale",
+            "Type": "SLIDER",
+            "FloatVal": 0.004,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 0.02
+        },
+        {
+            "Id": "ArmorPen",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "PenWarfare",
+            "Type": "SLIDER",
+            "FloatVal": 8.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 25.0
+        },
+        {
+            "Id": "PenChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.35,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "Stagger",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "StaggerDmgPct",
+            "Type": "SLIDER",
+            "FloatVal": 0.25,
+            "MinFloatVal": 0.05,
+            "MaxFloatVal": 0.8
+        },
+        {
+            "Id": "StaggerSeconds",
+            "Type": "SLIDER",
+            "FloatVal": 1.5,
+            "MinFloatVal": 0.5,
+            "MaxFloatVal": 10.0
+        },
+        {
+            "Id": "StaggerChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.5,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "FinishWounded",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "FinishHealth",
+            "Type": "SLIDER",
+            "FloatVal": 0.35,
+            "MinFloatVal": 0.05,
+            "MaxFloatVal": 0.8
+        },
+        {
+            "Id": "FinishRadius",
+            "Type": "SLIDER",
+            "FloatVal": 12.0,
+            "MinFloatVal": 2.0,
+            "MaxFloatVal": 40.0
+        },
+        {
+            "Id": "VetSpecials",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "VetSpecKills",
+            "Type": "SLIDER",
+            "FloatVal": 10.0,
+            "MinFloatVal": 3.0,
+            "MaxFloatVal": 50.0
+        },
+        {
+            "Id": "VetSpecBypass",
+            "Type": "SLIDER",
+            "FloatVal": 0.5,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        }
+    ],
+    "Armies": [
+        {
+            "Id": "WoundedRotation",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "RotateHealth",
+            "Type": "SLIDER",
+            "FloatVal": 0.3,
+            "MinFloatVal": 0.05,
+            "MaxFloatVal": 0.8
+        },
+        {
+            "Id": "RotateChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.3,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "Formations",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "KiteRange",
+            "Type": "SLIDER",
+            "FloatVal": 7.0,
+            "MinFloatVal": 2.0,
+            "MaxFloatVal": 20.0
+        },
+        {
+            "Id": "KiteChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.4,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "SiegeRelief",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "ReliefChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.5,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "ArmyVeterancy",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "VetArmyKills",
+            "Type": "SLIDER",
+            "FloatVal": 5.0,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 30.0
+        },
+        {
+            "Id": "VetShockResist",
+            "Type": "SLIDER",
+            "FloatVal": 0.5,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "VetArmyAura",
+            "Type": "SLIDER",
+            "FloatVal": 1.5,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 4.0
+        },
+        {
+            "Id": "VetRetention",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "VetKeepKills",
+            "Type": "SLIDER",
+            "FloatVal": 8.0,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 30.0
+        },
+        {
+            "Id": "VetKeepChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.7,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "CombinedArms",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "RangeShare",
+            "Type": "SLIDER",
+            "FloatVal": 0.4,
+            "MinFloatVal": 0.1,
+            "MaxFloatVal": 0.9
+        },
+        {
+            "Id": "SiegeMomentum",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "MomentumPerUnit",
+            "Type": "SLIDER",
+            "FloatVal": 0.05,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 0.5
+        }
+    ],
+    "Statecraft": [
+        {
+            "Id": "SeparatePeace",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "SepPeaceYears",
+            "Type": "SLIDER",
+            "FloatVal": 6.0,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 30.0
+        },
+        {
+            "Id": "SepPeaceShare",
+            "Type": "SLIDER",
+            "FloatVal": 0.25,
+            "MinFloatVal": 0.05,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "SepPeaceChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.1,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "PeacePlots",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "PeacePlotDiplo",
+            "Type": "SLIDER",
+            "FloatVal": 8.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 20.0
+        },
+        {
+            "Id": "PeacePlotCost",
+            "Type": "SLIDER",
+            "FloatVal": 20.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 100.0
+        },
+        {
+            "Id": "PeacePlotRatio",
+            "Type": "SLIDER",
+            "FloatVal": 2.0,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 5.0
+        },
+        {
+            "Id": "TwoFronts",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "TwoFrontChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.3,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "BorderFriction",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "BorderFrictionMult",
+            "Type": "SLIDER",
+            "FloatVal": 2.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 4.0
+        },
+        {
+            "Id": "TruceBreak",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "TruceBreakYears",
+            "Type": "SLIDER",
+            "FloatVal": 15.0,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 50.0
+        },
+        {
+            "Id": "TruceBreakOpinion",
+            "Type": "SLIDER",
+            "FloatVal": 60.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 200.0
+        },
+        {
+            "Id": "TributeInstallments",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "TributeYears",
+            "Type": "SLIDER",
+            "FloatVal": 10.0,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 50.0
+        },
+        {
+            "Id": "TributeAnnual",
+            "Type": "SLIDER",
+            "FloatVal": 15.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 100.0
+        }
+    ],
     "Debug": [
         {
             "Id": "LogTuning",

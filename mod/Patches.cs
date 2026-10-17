@@ -193,6 +193,25 @@ namespace CivMindOverhaul
             }
             return true;
         }
+
+        private static void Postfix(Actor pActor, ref bool __result)
+        {
+            if (__result || !Cfg.VetRetention || pActor == null)
+            {
+                return;
+            }
+            try
+            {
+                ActorData d = Rebel.ActorDataF == null ? null : Rebel.ActorDataF.GetValue(pActor) as ActorData;
+                if (d != null && d.kills >= Cfg.VetKeepKills && Randy.randomChance(Cfg.VetKeepChance))
+                {
+                    __result = true;
+                }
+            }
+            catch
+            {
+            }
+        }
     }
 
     [HarmonyPatch(typeof(Actor), "endJob")]
@@ -564,6 +583,45 @@ namespace CivMindOverhaul
                         }
                     }
                 }
+                if (Cfg.SeparatePeace && __instance.getAge() >= Cfg.SepPeaceYears && Randy.randomChance(Cfg.SepPeaceChance))
+                {
+                    Kingdom mainA = __instance.getMainAttacker();
+                    Kingdom mainD = __instance.getMainDefender();
+                    if (mainA != null && mainD != null)
+                    {
+                        ListPool<Kingdom> pool = new ListPool<Kingdom>();
+                        try
+                        {
+                            foreach (Kingdom k in __instance.getAttackers())
+                            {
+                                pool.Add(k);
+                            }
+                            foreach (Kingdom k2 in __instance.getDefenders())
+                            {
+                                pool.Add(k2);
+                            }
+                            for (int i = 0; i < pool.Count; i++)
+                            {
+                                Kingdom k3 = pool[i];
+                                if (k3 == null || k3 == mainA || k3 == mainD || !k3.isAlive())
+                                {
+                                    continue;
+                                }
+                                Kingdom main = __instance.isAttacker(k3) ? mainA : mainD;
+                                if (main != null && main.isAlive() && k3.countTotalWarriors() < main.countTotalWarriors() * Cfg.SepPeaceShare)
+                                {
+                                    __instance.leaveWar(k3);
+                                    UnityEngine.Debug.Log("[CivMind] separate peace: " + k3.name + " left " + __instance.name);
+                                    return;
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            pool.Dispose();
+                        }
+                    }
+                }
                 if (Cfg.WarStalemateYears <= 0f || __instance.getAge() < Cfg.WarStalemateYears)
                 {
                     return;
@@ -598,6 +656,16 @@ namespace CivMindOverhaul
         internal static readonly Dictionary<long, int> HeroKills = new Dictionary<long, int>();
         internal static readonly Dictionary<long, double> PeaceTime = new Dictionary<long, double>();
         internal static readonly Dictionary<long, float> Broke = new Dictionary<long, float>();
+        internal static readonly Dictionary<long, float> VetArmies = new Dictionary<long, float>();
+        internal static readonly Dictionary<long, int> TruceBreak = new Dictionary<long, int>();
+        internal static readonly Dictionary<long, TributeDeal> Tribute = new Dictionary<long, TributeDeal>();
+    }
+
+    internal class TributeDeal
+    {
+        internal long Winner;
+        internal int Expiry;
+        internal int LastPaid;
     }
 
     [HarmonyPatch(typeof(Army), "checkCaptainExistence")]
@@ -607,6 +675,7 @@ namespace CivMindOverhaul
         private static readonly FieldInfo _hasAttackTarget = AccessTools.Field(typeof(Actor), "has_attack_target");
         private static readonly FieldInfo _cityKingdom = AccessTools.Field(typeof(City), "kingdom");
         private static readonly FieldInfo _actorData = AccessTools.Field(typeof(Actor), "data");
+        private static readonly FieldInfo _behTileTarget = AccessTools.Field(typeof(Actor), "beh_tile_target");
         private static readonly Dictionary<long, float> _duelPairs = new Dictionary<long, float>();
         private static float _nextPrune;
 
@@ -629,6 +698,10 @@ namespace CivMindOverhaul
                 TickDuels(__instance, cap);
                 TickPillage(__instance, cap);
                 TickDesertion(__instance, cap);
+                TickRotation(__instance, cap);
+                TickFormations(__instance, cap);
+                TickRelief(__instance, cap);
+                TickVeterancy(__instance, cap);
             }
             catch (Exception e)
             {
@@ -646,6 +719,10 @@ namespace CivMindOverhaul
                 Prune(_duelPairs, now);
             }
             if (!Cfg.MoraleShock || pOldCaptain == null || !pOldCaptain.isRekt() || pArmy.isGroupInCityAndHaveLeader())
+            {
+                return;
+            }
+            if (WarFx.VetArmies.ContainsKey(pArmy.id) && Randy.randomChance(Cfg.VetShockResist))
             {
                 return;
             }
@@ -850,13 +927,169 @@ namespace CivMindOverhaul
                 break;
             }
         }
+
+        private static void TickRotation(Army pArmy, Actor pCaptain)
+        {
+            if (!Cfg.WoundedRotation || _hasAttackTarget == null || !Randy.randomChance(Cfg.RotateChance))
+            {
+                return;
+            }
+            for (int i = 0; i < pArmy.units.Count; i++)
+            {
+                Actor u = pArmy.units[i];
+                if (u == null || u.isRekt() || u == pCaptain)
+                {
+                    continue;
+                }
+                if (!(bool)_hasAttackTarget.GetValue(u) && u.getHealthRatio() < Cfg.RotateHealth)
+                {
+                    u.stopBeingWarrior();
+                    return;
+                }
+            }
+        }
+
+        private static void TickFormations(Army pArmy, Actor pCaptain)
+        {
+            if (!Cfg.Formations || _behTileTarget == null || _hasAttackTarget == null || _attackTarget == null)
+            {
+                return;
+            }
+            float range2 = Cfg.KiteRange * Cfg.KiteRange;
+            for (int i = 0; i < pArmy.units.Count; i++)
+            {
+                Actor u = pArmy.units[i];
+                if (u == null || u.isRekt() || u.current_tile == null || u.equipment == null)
+                {
+                    continue;
+                }
+                ActorEquipmentSlot slot = u.equipment.getSlot(EquipmentType.Weapon);
+                if (slot == null || slot.isEmpty() || slot.getItem() == null || slot.getItem().asset.attack_type != WeaponType.Range)
+                {
+                    continue;
+                }
+                if (!(bool)_hasAttackTarget.GetValue(u))
+                {
+                    continue;
+                }
+                BaseSimObject tgt = _attackTarget.GetValue(u) as BaseSimObject;
+                if (tgt == null || tgt.current_tile == null)
+                {
+                    continue;
+                }
+                float d2 = Toolbox.SquaredDistTile(u.current_tile, tgt.current_tile);
+                if (d2 > range2 || !Randy.randomChance(Cfg.KiteChance))
+                {
+                    continue;
+                }
+                WorldTile[] neighbours = u.current_tile.neighboursAll;
+                WorldTile bestTile = null;
+                float bestDist = d2;
+                for (int j = 0; j < neighbours.Length; j++)
+                {
+                    WorldTile t = neighbours[j];
+                    if (t == null || t.is_liquid || !t.isSameIsland(u.current_tile))
+                    {
+                        continue;
+                    }
+                    float nd = Toolbox.SquaredDistTile(t, tgt.current_tile);
+                    if (nd > bestDist)
+                    {
+                        bestDist = nd;
+                        bestTile = t;
+                    }
+                }
+                if (bestTile != null)
+                {
+                    _behTileTarget.SetValue(u, bestTile);
+                }
+            }
+        }
+
+        private static void TickRelief(Army pArmy, Actor pCaptain)
+        {
+            if (!Cfg.SiegeRelief || _behTileTarget == null || !Randy.randomChance(Cfg.ReliefChance))
+            {
+                return;
+            }
+            if (_hasAttackTarget != null && (bool)_hasAttackTarget.GetValue(pCaptain))
+            {
+                return;
+            }
+            Kingdom k = pArmy.getKingdom();
+            if (k == null || pCaptain.current_tile == null)
+            {
+                return;
+            }
+            City needy = null;
+            foreach (City c in k.getCities())
+            {
+                if ((c.isGettingCaptured() || c.isInDanger()) && c.getTile() != null && c.getTile().isSameIsland(pCaptain.current_tile))
+                {
+                    needy = c;
+                    break;
+                }
+            }
+            if (needy == null)
+            {
+                return;
+            }
+            WorldTile target = needy.getTile();
+            for (int i = 0; i < pArmy.units.Count; i++)
+            {
+                Actor u = pArmy.units[i];
+                if (u != null && !u.isRekt())
+                {
+                    _behTileTarget.SetValue(u, target);
+                }
+            }
+            UnityEngine.Debug.Log("[CivMind] relief march: " + pArmy.name + " → " + needy.name);
+        }
+
+        private static void TickVeterancy(Army pArmy, Actor pCaptain)
+        {
+            if (!Cfg.ArmyVeterancy || WarFx.VetArmies.ContainsKey(pArmy.id) || !Randy.randomChance(0.05f))
+            {
+                return;
+            }
+            int kills = 0;
+            int n = 0;
+            for (int i = 0; i < pArmy.units.Count; i++)
+            {
+                Actor u = pArmy.units[i];
+                if (u == null || u.isRekt())
+                {
+                    continue;
+                }
+                ActorData d = _actorData.GetValue(u) as ActorData;
+                if (d != null)
+                {
+                    kills += d.kills;
+                    n++;
+                }
+            }
+            if (n > 0 && (float)kills / n >= Cfg.VetArmyKills)
+            {
+                WarFx.VetArmies[pArmy.id] = UnityEngine.Time.time;
+                UnityEngine.Debug.Log("[CivMind] veteran army: " + pArmy.name + " (" + kills + " kills)");
+            }
+        }
     }
 
     [HarmonyPatch(typeof(Actor), "getHit")]
     internal static class PatchGetHit
     {
-        private static bool Prefix(Actor __instance, ref float pDamage, bool pFlash, AttackType pAttackType, BaseSimObject pAttacker, bool pSkipIfShake, bool pMetallicWeapon, bool pCheckDamageReduction)
+        private static readonly FieldInfo _stats = AccessTools.Field(typeof(BaseSimObject), "stats");
+        private static readonly MethodInfo _addStatus = AccessTools.Method(typeof(BaseSimObject), "addStatusEffect", new Type[]
         {
+            typeof(string),
+            typeof(float),
+            typeof(bool)
+        });
+
+        private static bool Prefix(Actor __instance, ref float pDamage, bool pFlash, AttackType pAttackType, BaseSimObject pAttacker, bool pSkipIfShake, bool pMetallicWeapon, ref bool pCheckDamageReduction, out bool __state)
+        {
+            __state = false;
             if (Cfg.HomeField)
             {
                 try
@@ -870,7 +1103,127 @@ namespace CivMindOverhaul
                 {
                 }
             }
+            try
+            {
+                if (Cfg.CombatCrits && _stats != null)
+                {
+                    BaseStats dStats = _stats.GetValue(__instance) as BaseStats;
+                    float dodge = Cfg.DodgeChance + (dStats == null ? 0f : dStats["accuracy"]) * Cfg.CritDodgeStatScale;
+                    if (dodge > 0f && Randy.randomChance(dodge))
+                    {
+                        pDamage = 0f;
+                        return true;
+                    }
+                    Actor atk = pAttacker as Actor;
+                    if (atk != null)
+                    {
+                        BaseStats aStats = _stats.GetValue(atk) as BaseStats;
+                        float crit = Cfg.CritChance + (aStats == null ? 0f : aStats["accuracy"]) * Cfg.CritDodgeStatScale;
+                        if (crit > 0f && Randy.randomChance(crit))
+                        {
+                            pDamage *= Cfg.CritMult;
+                        }
+                    }
+                }
+                if (Cfg.ArmorPen && pAttacker is Actor pen && pen.warfare >= Cfg.PenWarfare && Randy.randomChance(Cfg.PenChance))
+                {
+                    pCheckDamageReduction = false;
+                }
+                if (Cfg.Stagger && pDamage > 0f)
+                {
+                    int maxHp = __instance.getMaxHealth();
+                    if (maxHp > 0 && pDamage >= maxHp * Cfg.StaggerDmgPct && Randy.randomChance(Cfg.StaggerChance))
+                    {
+                        __state = true;
+                    }
+                }
+            }
+            catch
+            {
+            }
             return true;
+        }
+
+        private static void Postfix(Actor __instance, bool __state)
+        {
+            if (!__state || _addStatus == null || __instance.isRekt())
+            {
+                return;
+            }
+            try
+            {
+                _addStatus.Invoke(__instance, new object[] { "stunned", Cfg.StaggerSeconds, true });
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(BaseSimObject), "findEnemyObjectTarget")]
+    internal static class PatchFindTarget
+    {
+        private static readonly MethodInfo _findEnemies = AccessTools.Method(typeof(EnemiesFinder), "findEnemiesFrom", new Type[]
+        {
+            typeof(WorldTile),
+            typeof(Kingdom),
+            typeof(int)
+        });
+        private static readonly MethodInfo _canAttack = AccessTools.Method(typeof(BaseSimObject), "canAttackTarget", new Type[]
+        {
+            typeof(BaseSimObject),
+            typeof(bool),
+            typeof(bool)
+        });
+
+        private static void Postfix(BaseSimObject __instance, bool pAttackBuildings, ref BaseSimObject __result)
+        {
+            if (!Cfg.FinishWounded || _findEnemies == null || _canAttack == null || __instance == null || __instance.kingdom == null)
+            {
+                return;
+            }
+            Actor current = __result as Actor;
+            if (current == null || current.getHealthRatio() <= Cfg.FinishHealth)
+            {
+                return;
+            }
+            try
+            {
+                EnemyFinderData data = _findEnemies.Invoke(null, new object[] { __instance.current_tile, __instance.kingdom, -1 }) as EnemyFinderData;
+                if (data == null || data.isEmpty())
+                {
+                    return;
+                }
+                float range2 = Cfg.FinishRadius * Cfg.FinishRadius;
+                Actor best = null;
+                float bestDist = float.MaxValue;
+                for (int i = 0; i < data.list.Count; i++)
+                {
+                    Actor a = data.list[i] as Actor;
+                    if (a == null || a.isRekt() || a.getHealthRatio() > Cfg.FinishHealth || a.current_tile == null)
+                    {
+                        continue;
+                    }
+                    object ok = _canAttack.Invoke(__instance, new object[] { a, true, pAttackBuildings });
+                    if (!(ok is bool) || !(bool)ok)
+                    {
+                        continue;
+                    }
+                    float d = Toolbox.SquaredDistTile(__instance.current_tile, a.current_tile);
+                    if (d <= range2 && d < bestDist)
+                    {
+                        bestDist = d;
+                        best = a;
+                    }
+                }
+                if (best != null)
+                {
+                    __result = best;
+                }
+            }
+            catch
+            {
+            }
         }
     }
 
@@ -1012,10 +1365,6 @@ namespace CivMindOverhaul
                     GrantHero(atk);
                     GrantHero(def);
                 }
-                if (!Cfg.Reparations || _cityKingdom == null || Cfg.ReparationsPct <= 0f)
-                {
-                    return;
-                }
                 Kingdom winner = null;
                 Kingdom loser = null;
                 if (pWinner == WarWinner.Attackers)
@@ -1028,25 +1377,38 @@ namespace CivMindOverhaul
                     winner = def;
                     loser = atk;
                 }
-                if (winner == null || loser == null || !winner.hasCapital())
+                if (winner != null && loser != null && winner.isAlive() && loser.isAlive())
                 {
-                    return;
-                }
-                int total = 0;
-                foreach (City city in loser.getCities())
-                {
-                    int gold = city.getResourcesAmount("gold");
-                    int take = (int)(gold * Cfg.ReparationsPct / 100f);
-                    if (take > 0)
+                    if (Cfg.TributeInstallments)
                     {
-                        city.takeResource("gold", take);
-                        total += take;
+                        int yr = Date.getCurrentYear();
+                        WarFx.Tribute[loser.id] = new TributeDeal
+                        {
+                            Winner = winner.id,
+                            Expiry = yr + (int)Cfg.TributeYears,
+                            LastPaid = yr
+                        };
+                        UnityEngine.Debug.Log("[CivMind] tribute deal: " + loser.name + " pays " + winner.name + " for " + (int)Cfg.TributeYears + "y");
                     }
-                }
-                if (total > 0)
-                {
-                    winner.capital.addResourcesToRandomStockpile("gold", total);
-                    UnityEngine.Debug.Log("[CivMind] reparations: " + total + " gold from " + loser.name + " to " + winner.name);
+                    if (Cfg.Reparations && _cityKingdom != null && Cfg.ReparationsPct > 0f && winner.hasCapital())
+                    {
+                        int total = 0;
+                        foreach (City city in loser.getCities())
+                        {
+                            int gold = city.getResourcesAmount("gold");
+                            int take = (int)(gold * Cfg.ReparationsPct / 100f);
+                            if (take > 0)
+                            {
+                                city.takeResource("gold", take);
+                                total += take;
+                            }
+                        }
+                        if (total > 0)
+                        {
+                            winner.capital.addResourcesToRandomStockpile("gold", total);
+                            UnityEngine.Debug.Log("[CivMind] reparations: " + total + " gold from " + loser.name + " to " + winner.name);
+                        }
+                    }
                 }
             }
             catch (Exception e)
@@ -1420,6 +1782,38 @@ namespace CivMindOverhaul
                 {
                     return;
                 }
+                if (Cfg.TributeInstallments && pCity.isCapitalCity() && WarFx.Tribute.Count > 0)
+                {
+                    TributeDeal deal;
+                    if (WarFx.Tribute.TryGetValue(k.id, out deal))
+                    {
+                        int yr = Date.getCurrentYear();
+                        if (yr >= deal.Expiry)
+                        {
+                            WarFx.Tribute.Remove(k.id);
+                        }
+                        else if (yr > deal.LastPaid)
+                        {
+                            Kingdom winner = World.world.kingdoms.get(deal.Winner);
+                            if (winner == null || !winner.isAlive() || !winner.hasCapital())
+                            {
+                                WarFx.Tribute.Remove(k.id);
+                            }
+                            else
+                            {
+                                int pay = Math.Min((int)Cfg.TributeAnnual, pCity.getResourcesAmount("gold"));
+                                if (pay > 0)
+                                {
+                                    pCity.takeResource("gold", pay);
+                                    winner.capital.addResourcesToRandomStockpile("gold", pay);
+                                    UnityEngine.Debug.Log("[CivMind] tribute: " + k.name + " paid " + pay + " gold to " + winner.name);
+                                }
+                                deal.LastPaid = yr;
+                                WarFx.Tribute[k.id] = deal;
+                            }
+                        }
+                    }
+                }
                 if (Cfg.Wages && k.isAlive() && !k.isNeutral() && pCity.status.warriors_current > 0 && Randy.randomChance(Cfg.WageChance))
                 {
                     int cost = Math.Max(1, (int)Math.Ceiling(pCity.status.warriors_current * Cfg.WageRate));
@@ -1621,6 +2015,16 @@ namespace CivMindOverhaul
                     && (pKingdom.data.timestamp_last_war == -1.0 || Date.getYearsSince(pKingdom.data.timestamp_last_war) > (double)SimGlobals.m.diplomacy_years_war_timeout))
                 {
                     __result = true;
+                }
+                if (!__result && Cfg.TwoFronts && pKingdom.isSupreme() && pKingdom.hasEnemies()
+                    && World.world.wars.hasWars(pKingdom)
+                    && Randy.randomChance(Cfg.TwoFrontChance)
+                    && pKingdom.hasCities() && pKingdom.hasCapital()
+                    && pKingdom.countTotalWarriors() >= Cfg.WarMinWarriors
+                    && (pKingdom.data.timestamp_last_war == -1.0 || Date.getYearsSince(pKingdom.data.timestamp_last_war) > (double)SimGlobals.m.diplomacy_years_war_timeout))
+                {
+                    __result = true;
+                    UnityEngine.Debug.Log("[CivMind] two-front war: " + pKingdom.name + " opens a second front");
                 }
                 if (__result && Cfg.WarChest && pKingdom.hasCapital() && Rebel.ActorDataF != null)
                 {
@@ -2046,9 +2450,85 @@ namespace CivMindOverhaul
     [HarmonyPatch(typeof(City), "giveItem")]
     internal static class PatchGiveItem
     {
-        private static void Prefix(Actor pActor, out float __state)
+        private static readonly FieldInfo _storageVersion = AccessTools.Field(typeof(City), "_storage_version");
+
+        private static bool Prefix(Actor pActor, List<long> pItems, City pCity, ref bool __result, out float __state)
         {
             __state = EquippedValue(pActor);
+            if (!Cfg.CombinedArms || pItems == null || pItems.Count < 2 || pActor == null || pCity == null)
+            {
+                return true;
+            }
+            try
+            {
+                Army army = pActor.army;
+                Kingdom k = Rebel.Of(pCity);
+                if (army == null || k == null || !World.world.wars.hasWars(k))
+                {
+                    return true;
+                }
+                if (army.countMelee() <= army.countRange() * ((1f - Cfg.RangeShare) / Math.Max(0.01f, Cfg.RangeShare)))
+                {
+                    return true;
+                }
+                List<long> ranged = new List<long>();
+                for (int i = 0; i < pItems.Count; i++)
+                {
+                    Item it = World.world.items.get(pItems[i]);
+                    if (it != null && it.asset != null && it.asset.attack_type == WeaponType.Range)
+                    {
+                        ranged.Add(pItems[i]);
+                    }
+                }
+                if (ranged.Count == 0)
+                {
+                    return true;
+                }
+                __result = GiveItemFrom(ranged, pActor, pItems, pCity);
+                return false;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        private static bool GiveItemFrom(List<long> pFrom, Actor pActor, List<long> pStorage, City pCity)
+        {
+            if (pFrom.Count == 0 || !pActor.understandsHowToUseItems())
+            {
+                return false;
+            }
+            long random = pFrom.GetRandom();
+            Item item = World.world.items.get(random);
+            if (item == null)
+            {
+                return false;
+            }
+            EquipmentAsset asset = item.getAsset();
+            ActorEquipmentSlot slot = pActor.equipment.getSlot(asset.equipment_type);
+            if (!slot.isEmpty() && item.getValue() <= slot.getItem().getValue())
+            {
+                return false;
+            }
+            Item item2 = null;
+            if (!slot.isEmpty())
+            {
+                item2 = slot.getItem();
+                slot.takeAwayItem();
+            }
+            pStorage.Remove(random);
+            pActor.equipment.setItem(item, pActor);
+            pActor.setStatsDirty();
+            if (item2 != null)
+            {
+                pCity.data.equipment.addItem(pCity, item2, pStorage);
+            }
+            if (_storageVersion != null)
+            {
+                _storageVersion.SetValue(pCity, (int)_storageVersion.GetValue(pCity) + 1);
+            }
+            return true;
         }
 
         private static void Postfix(Actor pActor, City pCity, bool __result, float __state)
@@ -2168,6 +2648,42 @@ namespace CivMindOverhaul
         }
     }
 
+    [HarmonyPatch(typeof(City), "updateCapture")]
+    internal static class PatchUpdateCapture
+    {
+        private static readonly FieldInfo _captureTicks = AccessTools.Field(typeof(City), "_capture_ticks");
+        private static readonly FieldInfo _capturingUnits = AccessTools.Field(typeof(City), "_capturing_units");
+        private static readonly FieldInfo _beingCapturedBy = AccessTools.Field(typeof(City), "being_captured_by");
+
+        private static void Postfix(City __instance, float pElapsed)
+        {
+            if (!Cfg.SiegeMomentum || _captureTicks == null || _capturingUnits == null || _beingCapturedBy == null)
+            {
+                return;
+            }
+            try
+            {
+                Kingdom cap = _beingCapturedBy.GetValue(__instance) as Kingdom;
+                if (cap == null)
+                {
+                    return;
+                }
+                Dictionary<Kingdom, int> units = _capturingUnits.GetValue(__instance) as Dictionary<Kingdom, int>;
+                int cnt;
+                if (units == null || !units.TryGetValue(cap, out cnt) || cnt < 2)
+                {
+                    return;
+                }
+                cnt = Math.Min(cnt, 10);
+                float ticks = (float)_captureTicks.GetValue(__instance);
+                _captureTicks.SetValue(__instance, ticks + (cnt - 1) * Cfg.MomentumPerUnit * pElapsed);
+            }
+            catch
+            {
+            }
+        }
+    }
+
     [HarmonyPatch(typeof(Actor), "joinCity")]
     internal static class PatchMercenary
     {
@@ -2245,6 +2761,131 @@ namespace CivMindOverhaul
             }
             catch
             {
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(DiplomacyManager), "startWar", new Type[] { typeof(Kingdom), typeof(Kingdom), typeof(WarTypeAsset), typeof(bool) })]
+    internal static class PatchStartWar
+    {
+        private static void Postfix(object[] __args)
+        {
+            if (!Cfg.TruceBreak || __args == null || __args.Length < 2)
+            {
+                return;
+            }
+            try
+            {
+                Kingdom att = __args[0] as Kingdom;
+                Kingdom def = __args[1] as Kingdom;
+                if (att == null || def == null)
+                {
+                    return;
+                }
+                DiplomacyRelation rel = World.world.diplomacy.getRelation(att, def);
+                if (rel == null || rel.data == null)
+                {
+                    return;
+                }
+                if (Date.getYearsSince(rel.data.timestamp_last_war_ended) < SimGlobals.m.minimum_years_between_wars)
+                {
+                    WarFx.TruceBreak[att.id] = Date.getCurrentYear();
+                    UnityEngine.Debug.Log("[CivMind] truce broken: " + att.name + " → " + def.name);
+                }
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(OpinionLibrary), "init")]
+    internal static class PatchOpinionInit
+    {
+        private static void Postfix()
+        {
+            try
+            {
+                if (AssetManager.opinion_library == null)
+                {
+                    return;
+                }
+                if (Cfg.BorderFriction)
+                {
+                    OpinionAsset borders = AssetManager.opinion_library.get("opinion_borders") as OpinionAsset;
+                    if (borders != null && borders.calc != null)
+                    {
+                        OpinionDelegateCalc orig = borders.calc;
+                        borders.calc = delegate(Kingdom m, Kingdom t)
+                        {
+                            return (int)(orig(m, t) * Cfg.BorderFrictionMult);
+                        };
+                    }
+                }
+                if (Cfg.TruceBreak)
+                {
+                    OpinionAsset tb = new OpinionAsset
+                    {
+                        id = "opinion_truce_breaker",
+                        translation_key = "opinion_truce_breaker",
+                        translation_key_negative = "opinion_truce_breaker"
+                    };
+                    tb.calc = delegate(Kingdom m, Kingdom t)
+                    {
+                        int year;
+                        if (t != null && WarFx.TruceBreak.TryGetValue(t.id, out year) && Date.getCurrentYear() - year < Cfg.TruceBreakYears)
+                        {
+                            return -(int)Cfg.TruceBreakOpinion;
+                        }
+                        return 0;
+                    };
+                    AssetManager.opinion_library.add(tb);
+                }
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[CivMind] opinion init failed: " + e.Message);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(CombatActionLibrary), "init")]
+    internal static class PatchCombatInit
+    {
+        private static void Postfix()
+        {
+            if (!Cfg.VetSpecials || AssetManager.combat_action_library == null)
+            {
+                return;
+            }
+            try
+            {
+                for (int i = 0; i < AssetManager.combat_action_library.list.Count; i++)
+                {
+                    CombatActionAsset ca = AssetManager.combat_action_library.list[i];
+                    if (ca == null || ca.can_do_action == null)
+                    {
+                        continue;
+                    }
+                    CombatActionCheckStart orig = ca.can_do_action;
+                    ca.can_do_action = delegate(Actor a, BaseSimObject t)
+                    {
+                        if (orig(a, t))
+                        {
+                            return true;
+                        }
+                        if (Rebel.ActorDataF == null)
+                        {
+                            return false;
+                        }
+                        ActorData d = Rebel.ActorDataF.GetValue(a) as ActorData;
+                        return d != null && d.kills >= Cfg.VetSpecKills && Randy.randomChance(Cfg.VetSpecBypass);
+                    };
+                }
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[CivMind] combat action wrap failed: " + e.Message);
             }
         }
     }

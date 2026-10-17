@@ -97,22 +97,22 @@ Every hook point, its mechanism, and its config gate:
 | `PatchFindCaptain` | `Army.findCaptain` | prefix-supplant | `MeritCaptains` | Merit-based captain |
 | `PatchGetWarTarget` | `DiplomacyHelpers.getWarTarget` | prefix-supplant | `SmartWarTarget` | Scored war targets |
 | `PatchFindTargetCity` | `CityBehCheckAttackZone.findTargetCity` | prefix-supplant | `SmartCityTarget` | Scored siege targets |
-| `PatchWarUpdate` | `War.update` | postfix | `WarStalemateYears > 0`, `WarscoreSurrender` | Stalemate auto-peace + warscore surrender |
-| `PatchArmyTick` | `Army.checkCaptainExistence` | prefix+postfix | `MoraleShock`, `FocusFire`, `Duels`, `Pillage`, `DesertionWarYears` | Per-army tick dispatcher: shock bookkeeping → focus fire → duels → pillage → desertion |
-| `PatchGetHit` | `Actor.getHit` | prefix (ref pDamage) | `HomeField` | Home-field damage reduction |
+| `PatchWarUpdate` | `War.update` | postfix | `WarStalemateYears > 0`, `WarscoreSurrender`, `SeparatePeace` | Stalemate auto-peace + warscore surrender + collapsing participants `leaveWar` |
+| `PatchArmyTick` | `Army.checkCaptainExistence` | prefix+postfix | `MoraleShock`, `FocusFire`, `Duels`, `Pillage`, `DesertionWarYears`, `WoundedRotation`, `Formations`, `SiegeRelief`, `ArmyVeterancy` | Per-army tick dispatcher: shock bookkeeping → focus fire → duels → pillage → desertion → wounded rotation → kiting → relief marches → veterancy |
+| `PatchGetHit` | `Actor.getHit` | prefix (ref `pDamage`, ref `pCheckDamageReduction`, `__state`) + postfix | `HomeField`, `CombatCrits`, `ArmorPen`, `Stagger` | Home-field reduction → dodge → crit → armor pen → `stunned` on heavy hits |
 | `PatchWarriorTaxi` | `BehCityActorWarriorTaxiCheck.execute` | postfix | `NavalInvasions` | Follow embarked captain cross-island |
 | `PatchIncreaseKills` | `Actor.increaseKills` | postfix | `BerserkerRage` | Kill-streak → `rage` status + war-hero kill tally |
-| `PatchEndWar` | `WarManager.endWar` | postfix | `Reparations`, `WarHeroes` | Loser gold → winner capital + hero traits + `PeaceTime` |
+| `PatchEndWar` | `WarManager.endWar` | postfix | `Reparations`, `WarHeroes`, `TributeInstallments` | Loser gold → winner capital + hero traits + `PeaceTime` + `Tribute` deal record |
 | `PatchSuccessionClan` | `SuccessionTool.getKingFromRoyalClan` | postfix (ref `__result`) | `MeritSuccession` | Best-stat royal-clan heir |
 | `PatchSuccessionLeaders` | `SuccessionTool.getKingFromLeaders` | postfix (ref `__result`) | `MeritSuccession` | Best-stat leader heir |
 | `PatchAllianceTarget` | `DiplomacyHelpers.getAllianceTarget` | prefix-supplant | `BalanceAlliances` | Nearest-valid alliance partner |
 | `PatchFlee` | `BehFindRandomFarTile.execute` | prefix | `RallyFlee` | Flee toward captain / own city |
 | `PatchTryWarrior` | `City.tryToMakeWarrior` | prefix | `MilitiaReserve` | Peacetime warrior fill cap |
 | `PatchSetLeader` | `City.setLeader` | prefix (ref `pActor`) | `MeritLeaders` | Stewardship-scored leader swap |
-| `PatchCheckLoyalty` | `CityBehCheckLoyalty.execute` | postfix | `Uprisings`, `SiegeStarvation`, `Assimilation`, `Wages` | Uprising trigger + siege food drain + culture/religion conversion + soldier-wage drain |
-| `PatchIsWarNeeded` | `DiplomacyHelpers.isWarNeeded` | postfix (ref `__result`) | `KingPersonality`, `WarChest` | Pacifist veto / warlord bypass / treasury war funding |
+| `PatchCheckLoyalty` | `CityBehCheckLoyalty.execute` | postfix | `Uprisings`, `SiegeStarvation`, `Assimilation`, `Wages`, `TributeInstallments` | Uprising trigger + siege food drain + culture/religion conversion + soldier-wage drain + yearly tribute payment |
+| `PatchIsWarNeeded` | `DiplomacyHelpers.isWarNeeded` | postfix (ref `__result`) | `KingPersonality`, `WarChest`, `TwoFronts` | Pacifist veto / warlord bypass / treasury war funding / supreme second fronts |
 | `PatchSetKing` | `Kingdom.setKing` | postfix | `PretenderWars`, `CollapsePressure` | Pretender revolt / province drift |
-| `PatchPlotsInit` | `PlotsLibrary.init` | postfix | `AntiHegemon` | Wraps `alliance_destroy.check_is_possible` |
+| `PatchPlotsInit` | `PlotsLibrary.init` | postfix | `AntiHegemon`, `PeacePlots` | Wraps `alliance_destroy.check_is_possible` + retunes `attacker_stop_war` (reuse loop preserved) |
 | `PatchSupplyCities` | `CityBehSupplyKingdomCities.execute` | prefix+postfix | `WarTribute`, `SupplyWarMult`, `FamineRelief` | Prefix retargets supply to hungriest city; postfix: wartime tribute + faster aid |
 | `PatchGiveTax` | `BehActorGiveTax.execute` | prefix+postfix | `TaxUnrest`, `Corruption` | Tax-rate happiness dip + `__state` king-loot diff skim to leader |
 | `PatchCityTarget` | `BehFindNearbyPotentialCivCityToJoin.getPotentialCityNearby` (static) | prefix-supplant | `LaborMigration` | Migrants pick cities by open job slots + kingdom + distance |
@@ -120,7 +120,12 @@ Every hook point, its mechanism, and its config gate:
 | `PatchDockTarget` | `ai.ActorTool.getDockTradeTarget` (static) | postfix (ref `__result`) | `Embargo` | Nulls docks whose kingdom is at war with any alliance member |
 | `PatchBorderSteal` | `CityBehBorderSteal.execute` | postfix | `BorderPressure` | Extra wartime zone steal |
 | `PatchBoatTrade` | `BehBoatMakeTrade.execute` | postfix | `TradeIncome` | Distance-scaled trade gold to boat inventory |
-| `PatchGiveItem` | `City.giveItem` (static) | prefix+postfix | `EquipmentMarket` | `__state` equipped-value diff → charge `money` → city gold |
+| `PatchGiveItem` | `City.giveItem` (static) | prefix+postfix | `EquipmentMarket`, `CombinedArms` | Wartime melee-heavy armies pick from ranged-only sublist (vanilla body replicated) + `__state` equipped-value diff → charge `money` |
+| `PatchFindTarget` | `BaseSimObject.findEnemyObjectTarget` | postfix (ref `__result`) | `FinishWounded` | Rescan enemies → prefer wounded actors |
+| `PatchUpdateCapture` | `City.updateCapture` | postfix | `SiegeMomentum` | `_capture_ticks` momentum per extra attacker, capped at 10 |
+| `PatchStartWar` | `DiplomacyManager.startWar` | postfix | `TruceBreak` | Stamp `WarFx.TruceBreak` on early re-declaration |
+| `PatchOpinionInit` | `OpinionLibrary.init` | postfix | `BorderFriction`, `TruceBreak` | Wrap `opinion_borders.calc` + inject `opinion_truce_breaker` |
+| `PatchCombatInit` | `CombatActionLibrary.init` | postfix | `VetSpecials` | Wrap every `can_do_action` — veterans bypass failed checks |
 
 Plus tuning-only features with no dedicated patch class (see `Tuning.Apply`):
 `find_city_job` demand weight, expansion/social/reproduction weights, housing-gated
@@ -136,7 +141,12 @@ written by `PatchArmyTick` on field captain-death and read by the `run_away` del
 `PatchEndWar`; `PeaceTime: kingdomId → world time of last war end`, read by
 `PatchCitizenTasks` for the reconstruction surge; `Broke: kingdomId → Time.time` expiry,
 stamped by `PatchCheckLoyalty` when a city can't make payroll and read by `TickDesertion`
-for the unpaid-mutiny desertion multiplier.
+for the unpaid-mutiny desertion multiplier; `VetArmies: armyId → Time.time` promotion stamp,
+written by `TickVeterancy` and read by `ReworkRetreat` (aura boost + shock resist);
+`TruceBreak: kingdomId → currentYear` of the last early re-declaration, written by
+`PatchStartWar` and read by `opinion_truce_breaker`; `Tribute: kingdomId → TributeDeal
+{Winner, Expiry, LastPaid}`, written by `PatchEndWar` on decisive wins and paid down
+yearly by `PatchCheckLoyalty` at the loser's capital.
 
 `Rebel` (in `Patches.cs`) holds the shared rebellion plumbing — reflected `makeOwnKingdom`,
 `startWar`, `City.kingdom`, `setCulture`, `setReligion` handles plus the once-per-city
@@ -171,7 +181,12 @@ null-checked invocation — if a game update renames a member, the patch degrade
 | `City.zones` | field | `PatchFlee` (rally fallback target) |
 | `Actor.beh_tile_target` | field | `PatchFlee` |
 | `City.makeOwnKingdom` | method | `Rebel` (secession — uprisings, pretenders, drift) |
-| `DiplomacyManager.startWar` | method | `Rebel` (rebellion wars) |
+| `DiplomacyManager.startWar` | method | `Rebel` (rebellion wars) — also patched by `PatchStartWar` (truce-break stamp) |
+| `EnemiesFinder.findEnemiesFrom` | static method | `PatchFindTarget` (wounded-target rescan) |
+| `BaseSimObject.canAttackTarget` | method | `PatchFindTarget` (validity filter for swapped targets) |
+| `Actor.attack_target`, `Actor.has_attack_target`, `Actor.beh_tile_target` | field | `PatchArmyTick` (focus fire, kiting, relief marches) |
+| `City._capture_ticks`, `_capturing_units`, `being_captured_by` | field | `PatchUpdateCapture` (siege momentum) |
+| `City._storage_version` | field | `PatchGiveItem` (replicated `giveItem` body bumps it) |
 | `Actor.data` | field | `Rebel`/`PatchIsWarNeeded` (`ActorData.money` war chest) |
 | `City.setCulture`, `City.setReligion` | method | `PatchCheckLoyalty` (assimilation) |
 | `City.addZone`, `City.removeZone` | method | `PatchBorderSteal` (zone grab) |

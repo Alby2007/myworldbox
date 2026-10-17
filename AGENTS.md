@@ -12,6 +12,7 @@
 - `build\build.csproj` — offline typecheck: `cd build && dotnet build` (references real game dlls; netstandard2.1)
 - `decompiled\` — full `Assembly-CSharp.dll` decompile via `ilspycmd -p -o decompiled <dll>` (tool: `dotnet tool install -g ilspycmd --version 9.1.0.7988`)
 - `game-api\` — curated decompiled classes + `types.txt` (full type list)
+- `docs\` — architecture docs + Mermaid diagrams (start at `docs\README.md`)
 
 ## Civ/jobs AI architecture (0.51.2)
 - Unit AI = utility decisions: `UtilityBasedDecisionSystem.useOn(Actor)` scores `DecisionAsset`s (`weight` or `weight_calculate_custom`, softmax `e^w` weighted random), filtered by `DecisionChecks`, cooldowns, and `NeuroLayer` priority tiers (`critical` forces priority-only mode; `isAbleToSkipPriorityLevels` → 80% chance to bypass)

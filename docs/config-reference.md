@@ -168,7 +168,7 @@ v0.5 features — religion-driven wars and occupied-city assimilation.
 
 ## Economy
 
-v0.6 features — loot/tax economy, item production, trade boats.
+v0.6–v0.7 features — loot/tax economy, item production, trade boats, plunder incentives, wages.
 
 | Id | Label | Type | Default | Range | Controls |
 |---|---|---|---|---|---|
@@ -183,6 +183,19 @@ v0.6 features — loot/tax economy, item production, trade boats.
 | `ArmDangerMult` | Danger arming mult | slider | 3.0 | 1–6 | Extra weight × while `isInDanger` |
 | `TradeWeight` | Boat trade urge | slider | 1.5 | 0.5–3 | `boat_trading`/`boat_fishing` weight × |
 | `TradeWarMult` | Trade during war (x) | slider | 0.3 | 0–1 | `boat_trading` weight × while at war |
+| `RichTargets` | Wealthy war targets attract wars | switch | on | — | War-target score ÷ `1 + capitalGold/scale` |
+| `RichTargetGold` | Rich target scale (gold) | slider | 100 | 10–500 | Gold divisor — lower = plunder matters more |
+| `LootTax` | Crown skims pillage loot | switch | on | — | War dividend skim on loot deposits |
+| `LootTaxPct` | War dividend (% of loot) | slider | 20 | 0–80 | % of deposited pillage loot to king `money` |
+| `Wages` | Soldier wages | switch | on | — | Periodic city gold drain per warrior |
+| `WageChance` | Wage charge chance (per check) | slider | 0.1 | 0–1 | Roll per `CityBehCheckLoyalty` tick |
+| `WageRate` | Gold per warrior (wage) | slider | 1.0 | 0–10 | Cost = `warriors_current × WageRate` |
+| `MutinyDesertionMult` | Unpaid army desertion (x) | slider | 2.5 | 1–10 | Desertion × while kingdom can't pay |
+| `TradeIncome` | Trade runs earn city gold | switch | on | — | `BehBoatMakeTrade` postfix bonus |
+| `TradeIncomeBase` | Trade run base gold | slider | 5 | 0–50 | Flat gold per completed run |
+| `TradeIncomePerTile` | Trade gold per tile | slider | 0.15 | 0–2 | Distance scaling to foreign dock |
+| `EquipmentMarket` | Citizens pay for equipment | switch | on | — | `City.giveItem` charges `money` |
+| `ItemPricePct` | Item price (% of value) | slider | 100 | 0–300 | % of equipped-value delta charged |
 
 ## Debug
 

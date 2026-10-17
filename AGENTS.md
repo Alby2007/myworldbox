@@ -114,8 +114,19 @@
 50. Item economy — `make_items` (w0.4→×ItemCraftWeight) + `try_to_take_city_item` (cd180→×ItemArmCooldown) via `Tuning.RetuneMult`; danger spike: `city.isInDanger` → weight ×ArmDangerMult (militia grabs weapons)
 51. Trade boats — `boat_trading`/`boat_fishing` ×TradeWeight; wartime blockade: `boat_trading` ×TradeWarMult when kingdom at war (`RetuneMult` situational wrap; boat kingdom via `a.kingdom ?? Rebel.Of(a.city)`)
 
+## Mod features (v0.7 — cheap & synergistic economy)
+
+52. Rich-target wars — `PatchGetWarTarget` loop: `score /= 1 + capitalGold/RichTargetGold` → wealthy kingdoms attract plunder wars (score is min-picked)
+53. War dividend — pillage deposit block in `PatchArmyTick`: `LootTaxPct`% of each `d.loot` → `king.addMoney` before stockpile deposit
+54. Soldier wages & mutiny — `PatchCheckLoyalty`: `WageChance` roll → `takeResource("gold", warriors_current × WageRate)`; can't pay → `WarFx.Broke[k.id] = Time.time + 120` → `TickDesertion` × `MutinyDesertionMult`
+55. Trade income — `PatchBoatTrade` postfix on `BehBoatMakeTrade.execute`: `addToInventory("gold", TradeIncomeBase + dist(homeCenter→beh_building_target dock) × TradeIncomePerTile)`
+56. Equipment market — `PatchGiveItem` on static `City.giveItem`: prefix `__state` = equipped value sum → postfix charge `delta × ItemPricePct/100` from `data.money` → `addResourcesToRandomStockpile("gold")`; free while `city.isInDanger`
+
 ## Access gotchas
-- `internal` (use `AccessTools` reflection): `City.hasBuildingToBuild`, `hasStorageBuilding`, `hasBuildingType`, `City.kingdom`, `City.city_center`, `City.zones`, `City.storages`, `City._timer_warrior`, `City.tryToMakeWarrior`, `City.makeOwnKingdom`, `City.addZone`/`removeZone`, `City.setCulture`/`setReligion`, `DiplomacyManager.startWar`, `Actor.beh_tile_target`, `Actor.isProfession`, `Actor.addExperience`, `Actor.data`, `Actor.attack_target`, `Actor.has_attack_target`, `Actor.getHit` (internal override, 7 params), `BaseSimObject.stats`, `BaseSimObject.addStatusEffect(string,float,bool)` — note the StatusAsset overload is separate
+- `internal` (use `AccessTools` reflection): `City.hasBuildingToBuild`, `hasStorageBuilding`, `hasBuildingType`, `City.kingdom`, `City.city_center`, `City.zones`, `City.storages`, `City._timer_warrior`, `City.tryToMakeWarrior`, `City.makeOwnKingdom`, `City.addZone`/`removeZone`, `City.setCulture`/`setReligion`, `DiplomacyManager.startWar`, `Actor.beh_tile_target`, `Actor.beh_building_target`, `Actor.isProfession`, `Actor.addExperience`, `Actor.data`, `Actor.attack_target`, `Actor.has_attack_target`, `Actor.getHit` (internal override, 7 params), `BaseSimObject.stats`, `BaseSimObject.addStatusEffect(string,float,bool)` — note the StatusAsset overload is separate
+- `City.giveItem(Actor, List<long>, City)` is **public static**, returns bool — `PatchGiveItem` diffs total equipped `Item.getValue()` across all `EquipmentType` slots (prefix `__state` → postfix charge `ActorData.money`, deposit to city gold; free while `isInDanger`)
+- `ActorData.loot`/`money` are public int props once `Actor.data` is reflected; `Kingdom.king`/`capital`, `City.status.warriors_current`, `Building.current_tile`, `Toolbox.Dist` are public
+- `BehBoatMakeTrade.execute` gives the boat +5 inventory gold (delivered home by vanilla unload); trade-income bonus rides the same inventory path
 - `private` but patchable by name: `Actor.increaseKills`, `Army.findCaptain`, `CityBehCheckAttackZone.findTargetCity`
 - `hasCity()` is internal on Actor — use `a.city != null`
 - `Kingdom` warrior check is `hasEnemies()`/`wars.hasWars(k)` — no `hasWars()` on Kingdom

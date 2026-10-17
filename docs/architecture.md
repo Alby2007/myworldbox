@@ -109,12 +109,14 @@ Every hook point, its mechanism, and its config gate:
 | `PatchFlee` | `BehFindRandomFarTile.execute` | prefix | `RallyFlee` | Flee toward captain / own city |
 | `PatchTryWarrior` | `City.tryToMakeWarrior` | prefix | `MilitiaReserve` | Peacetime warrior fill cap |
 | `PatchSetLeader` | `City.setLeader` | prefix (ref `pActor`) | `MeritLeaders` | Stewardship-scored leader swap |
-| `PatchCheckLoyalty` | `CityBehCheckLoyalty.execute` | postfix | `Uprisings`, `SiegeStarvation`, `Assimilation` | Uprising trigger + siege food drain + culture/religion conversion |
+| `PatchCheckLoyalty` | `CityBehCheckLoyalty.execute` | postfix | `Uprisings`, `SiegeStarvation`, `Assimilation`, `Wages` | Uprising trigger + siege food drain + culture/religion conversion + soldier-wage drain |
 | `PatchIsWarNeeded` | `DiplomacyHelpers.isWarNeeded` | postfix (ref `__result`) | `KingPersonality`, `WarChest` | Pacifist veto / warlord bypass / treasury war funding |
 | `PatchSetKing` | `Kingdom.setKing` | postfix | `PretenderWars`, `CollapsePressure` | Pretender revolt / province drift |
 | `PatchPlotsInit` | `PlotsLibrary.init` | postfix | `AntiHegemon` | Wraps `alliance_destroy.check_is_possible` |
 | `PatchSupplyCities` | `CityBehSupplyKingdomCities.execute` | postfix | `WarTribute`, `SupplyWarMult` | Wartime tribute + faster aid |
 | `PatchBorderSteal` | `CityBehBorderSteal.execute` | postfix | `BorderPressure` | Extra wartime zone steal |
+| `PatchBoatTrade` | `BehBoatMakeTrade.execute` | postfix | `TradeIncome` | Distance-scaled trade gold to boat inventory |
+| `PatchGiveItem` | `City.giveItem` (static) | prefix+postfix | `EquipmentMarket` | `__state` equipped-value diff → charge `money` → city gold |
 
 Plus tuning-only features with no dedicated patch class (see `Tuning.Apply`):
 `find_city_job` demand weight, expansion/social/reproduction weights, housing-gated
@@ -128,7 +130,9 @@ retunes: `give_tax`, `make_items`, `try_to_take_city_item` (danger spike),
 written by `PatchArmyTick` on field captain-death and read by the `run_away` delegate;
 `HeroKills: actorId → wartime kill count`, fed by `PatchIncreaseKills` and consumed by
 `PatchEndWar`; `PeaceTime: kingdomId → world time of last war end`, read by
-`PatchCitizenTasks` for the reconstruction surge.
+`PatchCitizenTasks` for the reconstruction surge; `Broke: kingdomId → Time.time` expiry,
+stamped by `PatchCheckLoyalty` when a city can't make payroll and read by `TickDesertion`
+for the unpaid-mutiny desertion multiplier.
 
 `Rebel` (in `Patches.cs`) holds the shared rebellion plumbing — reflected `makeOwnKingdom`,
 `startWar`, `City.kingdom`, `setCulture`, `setReligion` handles plus the once-per-city
@@ -152,7 +156,8 @@ null-checked invocation — if a game update renames a member, the patch degrade
 | `City.kingdom`, `City.city_center` | field | `PatchFindTargetCity`, `PatchArmyTick` (pillage) |
 | `Actor.hasWeapon` | method | `Tuning.ReworkRetreat` |
 | `Actor.attack_target`, `Actor.has_attack_target` | field | `PatchArmyTick` (focus fire) |
-| `Actor.data` | field | `PatchArmyTick` (pillage — `ActorData.loot` set) |
+| `Actor.data` | field | `PatchArmyTick` (pillage — `ActorData.loot` set), `PatchIsWarNeeded` (war chest), `PatchGiveItem` (`ActorData.money`) |
+| `Actor.beh_building_target` | field | `PatchBoatTrade` (foreign dock for distance) |
 | `BaseSimObject.addStatusEffect(string,float,bool)` | method | `PatchIncreaseKills` |
 | `Actor.getHit` | internal override | `PatchGetHit` (patched by name, `ref pDamage`) |
 | `City.kingdom` | field | `PatchEndWar`, `PatchCheckLoyalty` |

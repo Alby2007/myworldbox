@@ -653,6 +653,87 @@
             "FloatVal": 0.3,
             "MinFloatVal": 0.0,
             "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "RichTargets",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "RichTargetGold",
+            "Type": "SLIDER",
+            "FloatVal": 100.0,
+            "MinFloatVal": 10.0,
+            "MaxFloatVal": 500.0
+        },
+        {
+            "Id": "LootTax",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "LootTaxPct",
+            "Type": "SLIDER",
+            "FloatVal": 20.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 80.0
+        },
+        {
+            "Id": "Wages",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "WageChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.1,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "WageRate",
+            "Type": "SLIDER",
+            "FloatVal": 1.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 10.0
+        },
+        {
+            "Id": "MutinyDesertionMult",
+            "Type": "SLIDER",
+            "FloatVal": 2.5,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 10.0
+        },
+        {
+            "Id": "TradeIncome",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "TradeIncomeBase",
+            "Type": "SLIDER",
+            "FloatVal": 5.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 50.0
+        },
+        {
+            "Id": "TradeIncomePerTile",
+            "Type": "SLIDER",
+            "FloatVal": 0.15,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 2.0
+        },
+        {
+            "Id": "EquipmentMarket",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "ItemPricePct",
+            "Type": "SLIDER",
+            "FloatVal": 100.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 300.0
         }
     ],
     "HomeFront": [

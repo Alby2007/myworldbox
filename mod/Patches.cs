@@ -441,6 +441,10 @@ namespace CivMindOverhaul
                         {
                             score *= Cfg.HolyWarMult;
                         }
+                        if (Cfg.RichTargets)
+                        {
+                            score /= 1f + k.capital.getResourcesAmount("gold") / Math.Max(1f, Cfg.RichTargetGold);
+                        }
                         if (score < bestScore)
                         {
                             bestScore = score;
@@ -585,6 +589,7 @@ namespace CivMindOverhaul
         internal static readonly Dictionary<long, float> Shaken = new Dictionary<long, float>();
         internal static readonly Dictionary<long, int> HeroKills = new Dictionary<long, int>();
         internal static readonly Dictionary<long, double> PeaceTime = new Dictionary<long, double>();
+        internal static readonly Dictionary<long, float> Broke = new Dictionary<long, float>();
     }
 
     [HarmonyPatch(typeof(Army), "checkCaptainExistence")]
@@ -769,7 +774,18 @@ namespace CivMindOverhaul
                 }
                 if (homeZone && d.loot > 0 && u.city != null && u.inOwnCityBorders())
                 {
-                    u.city.addResourcesToRandomStockpile("gold", d.loot);
+                    int loot = d.loot;
+                    Kingdom kr = u.kingdom;
+                    if (Cfg.LootTax && Cfg.LootTaxPct > 0f && kr != null && kr.hasKing())
+                    {
+                        int skim = (int)(loot * Cfg.LootTaxPct / 100f);
+                        if (skim > 0)
+                        {
+                            kr.king.addMoney(skim);
+                            loot -= skim;
+                        }
+                    }
+                    u.city.addResourcesToRandomStockpile("gold", loot);
                     d.loot = 0;
                 }
                 else if (enemyCity && u.isAlive() && Randy.randomChance(Cfg.PillageChance))
@@ -786,12 +802,25 @@ namespace CivMindOverhaul
 
         private static void TickDesertion(Army pArmy, Actor pCaptain)
         {
-            if (Cfg.DesertionWarYears <= 0f || !Randy.randomChance(Cfg.DesertionChance) || pCaptain.inOwnCityBorders())
+            if (Cfg.DesertionWarYears <= 0f || pCaptain.inOwnCityBorders())
             {
                 return;
             }
             Kingdom k = pArmy.getKingdom();
             if (k == null)
+            {
+                return;
+            }
+            float chance = Cfg.DesertionChance;
+            if (Cfg.Wages)
+            {
+                float broke;
+                if (WarFx.Broke.TryGetValue(k.id, out broke) && broke > UnityEngine.Time.time)
+                {
+                    chance *= Cfg.MutinyDesertionMult;
+                }
+            }
+            if (chance <= 0f || !Randy.randomChance(chance))
             {
                 return;
             }
@@ -1383,6 +1412,18 @@ namespace CivMindOverhaul
                 {
                     return;
                 }
+                if (Cfg.Wages && k.isAlive() && !k.isNeutral() && pCity.status.warriors_current > 0 && Randy.randomChance(Cfg.WageChance))
+                {
+                    int cost = Math.Max(1, (int)Math.Ceiling(pCity.status.warriors_current * Cfg.WageRate));
+                    if (pCity.getResourcesAmount("gold") >= cost)
+                    {
+                        pCity.takeResource("gold", cost);
+                    }
+                    else
+                    {
+                        WarFx.Broke[k.id] = UnityEngine.Time.time + 120f;
+                    }
+                }
                 double occupiedSince = pCity.data.timestamp_kingdom;
                 bool occupied = pCity.data.timestamp_kingdom > pCity.data.created_time + 0.1 && Date.getYearsSince(occupiedSince) < Cfg.UprisingRecentYears;
                 if (Cfg.Assimilation && occupied && Randy.randomChance(Cfg.AssimilationChance))
@@ -1785,6 +1826,104 @@ namespace CivMindOverhaul
             catch
             {
             }
+        }
+    }
+
+    [HarmonyPatch(typeof(BehBoatMakeTrade), "execute")]
+    internal static class PatchBoatTrade
+    {
+        private static readonly FieldInfo _behTarget = AccessTools.Field(typeof(Actor), "beh_building_target");
+        private static readonly FieldInfo _cityCenter = AccessTools.Field(typeof(City), "city_center");
+
+        private static void Postfix(Actor pActor)
+        {
+            if (!Cfg.TradeIncome || pActor == null || _behTarget == null || _cityCenter == null)
+            {
+                return;
+            }
+            try
+            {
+                City home = pActor.city;
+                Building dock = _behTarget.GetValue(pActor) as Building;
+                if (home == null || dock == null || dock.current_tile == null)
+                {
+                    return;
+                }
+                UnityEngine.Vector2 homeCenter = (UnityEngine.Vector2)_cityCenter.GetValue(home);
+                int bonus = (int)Math.Round(Cfg.TradeIncomeBase + Toolbox.Dist(homeCenter.x, homeCenter.y, dock.current_tile.posV.x, dock.current_tile.posV.y) * Cfg.TradeIncomePerTile);
+                if (bonus > 0)
+                {
+                    pActor.addToInventory("gold", bonus);
+                }
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[CivMind] trade income failed: " + e.Message);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(City), "giveItem")]
+    internal static class PatchGiveItem
+    {
+        private static void Prefix(Actor pActor, out float __state)
+        {
+            __state = EquippedValue(pActor);
+        }
+
+        private static void Postfix(Actor pActor, City pCity, bool __result, float __state)
+        {
+            if (!Cfg.EquipmentMarket || !__result || pActor == null || pCity == null)
+            {
+                return;
+            }
+            try
+            {
+                if (pCity.isInDanger())
+                {
+                    return;
+                }
+                float delta = EquippedValue(pActor) - __state;
+                int price = (int)(delta * Cfg.ItemPricePct / 100f);
+                if (price <= 0)
+                {
+                    return;
+                }
+                ActorData d = Rebel.ActorDataF == null ? null : Rebel.ActorDataF.GetValue(pActor) as ActorData;
+                if (d == null || d.money <= 0)
+                {
+                    return;
+                }
+                price = Math.Min(price, d.money);
+                if (price <= 0)
+                {
+                    return;
+                }
+                d.money -= price;
+                pCity.addResourcesToRandomStockpile("gold", price);
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[CivMind] equipment market failed: " + e.Message);
+            }
+        }
+
+        private static float EquippedValue(Actor pActor)
+        {
+            float v = 0f;
+            if (pActor == null || pActor.equipment == null)
+            {
+                return 0f;
+            }
+            foreach (EquipmentType t in Enum.GetValues(typeof(EquipmentType)))
+            {
+                ActorEquipmentSlot s = pActor.equipment.getSlot(t);
+                if (s != null && !s.isEmpty() && s.getItem() != null)
+                {
+                    v += s.getItem().getValue();
+                }
+            }
+            return v;
         }
     }
 }

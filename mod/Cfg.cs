@@ -123,6 +123,19 @@ namespace CivMindOverhaul
         public static float ArmDangerMult = 3f;
         public static float TradeWeight = 1.5f;
         public static float TradeWarMult = 0.3f;
+        public static bool RichTargets = true;
+        public static float RichTargetGold = 100f;
+        public static bool LootTax = true;
+        public static float LootTaxPct = 20f;
+        public static bool Wages = true;
+        public static float WageChance = 0.1f;
+        public static float WageRate = 1f;
+        public static float MutinyDesertionMult = 2.5f;
+        public static bool TradeIncome = true;
+        public static float TradeIncomeBase = 5f;
+        public static float TradeIncomePerTile = 0.15f;
+        public static bool EquipmentMarket = true;
+        public static float ItemPricePct = 100f;
         public static bool LogTuning = true;
 
         public static void Load(ModConfig pCfg)
@@ -250,6 +263,19 @@ namespace CivMindOverhaul
             ArmDangerMult = Slider(pCfg, "Economy", "ArmDangerMult", ArmDangerMult);
             TradeWeight = Slider(pCfg, "Economy", "TradeWeight", TradeWeight);
             TradeWarMult = Slider(pCfg, "Economy", "TradeWarMult", TradeWarMult);
+            RichTargets = Switch(pCfg, "Economy", "RichTargets", RichTargets);
+            RichTargetGold = Slider(pCfg, "Economy", "RichTargetGold", RichTargetGold);
+            LootTax = Switch(pCfg, "Economy", "LootTax", LootTax);
+            LootTaxPct = Slider(pCfg, "Economy", "LootTaxPct", LootTaxPct);
+            Wages = Switch(pCfg, "Economy", "Wages", Wages);
+            WageChance = Slider(pCfg, "Economy", "WageChance", WageChance);
+            WageRate = Slider(pCfg, "Economy", "WageRate", WageRate);
+            MutinyDesertionMult = Slider(pCfg, "Economy", "MutinyDesertionMult", MutinyDesertionMult);
+            TradeIncome = Switch(pCfg, "Economy", "TradeIncome", TradeIncome);
+            TradeIncomeBase = Slider(pCfg, "Economy", "TradeIncomeBase", TradeIncomeBase);
+            TradeIncomePerTile = Slider(pCfg, "Economy", "TradeIncomePerTile", TradeIncomePerTile);
+            EquipmentMarket = Switch(pCfg, "Economy", "EquipmentMarket", EquipmentMarket);
+            ItemPricePct = Slider(pCfg, "Economy", "ItemPricePct", ItemPricePct);
             LogTuning = Switch(pCfg, "Debug", "LogTuning", LogTuning);
         }
 

@@ -20,6 +20,7 @@ v0.3 adds nine more features (15–23) riding a shared per-army tick — see **W
 v0.4 adds ten more (24–33) — see **Politics, Battlefield Polish & Home Front**.
 v0.5 adds twelve more (35–46) — see **Realpolitik, Economy & Culture**.
 v0.6 adds the economy pack (48–51) — see **Economy & Logistics**.
+v0.7 deepens it (52–56): plunder-driven targeting, crown loot tax, soldier wages, trade-run income, and an equipment market.
 
 ## Where they land in the pipeline
 
@@ -428,3 +429,40 @@ drafted militia grabs weapons from storage instead of fighting barehanded.
 `boat_trading` additionally ×`TradeWarMult` (0.3) while the boat's kingdom is at
 war — trade collapses under wartime pressure without touching `boat_transport_check`
 (the military ferry path).
+
+## 52. Rich-target wars
+
+`PatchGetWarTarget` extension: a candidate's score is divided by
+`1 + capitalGold / RichTargetGold` (100). Wealthy capitals pull their score down →
+wars of plunder drift toward rich kingdoms; the poor get ignored. All eligibility
+filters (reachability, warrior ratio, peace timer) still apply — this only reshapes
+preference.
+
+## 53. War dividend (loot tax)
+
+The pillage deposit in `PatchArmyTick` now skims `LootTaxPct` (20%) of each
+returned `data.loot` stack into `king.addMoney` before the rest lands in the city
+stockpile. Conquest literally funds the crown — aggressive kings get rich off
+their armies' plunder instead of waiting for the `give_tax` trickle.
+
+## 54. Soldier wages & mutiny
+
+Each `PatchCheckLoyalty` tick, a city rolls `WageChance` (0.1) and pays
+`warriors_current × WageRate` (1) gold from stockpile. Cities that can't cover the
+payroll stamp `WarFx.Broke[kingdom]` — armies of broke kingdoms take
+`DesertionChance × MutinyDesertionMult` (2.5) in the desertion tick. Standing
+armies now have a literal upkeep: poor kingdoms bleed soldiers.
+
+## 55. Trade income
+
+`PatchBoatTrade` postfix on `BehBoatMakeTrade.execute`: a completed run adds
+`TradeIncomeBase` (5) + `dist(home city_center → foreign dock) × TradeIncomePerTile`
+(0.15) gold to the boat's inventory — delivered home by the vanilla unload path.
+Distant partners pay more; docks become real revenue.
+
+## 56. Equipment market
+
+`PatchGiveItem` on `City.giveItem`: a prefix records total equipped value and a
+postfix charges the citizen `delta × ItemPricePct` (100%) from `data.money`,
+depositing it into the city's gold stockpile. Free when `city.isInDanger` — siege
+draftees still arm for free; peacetime gearing costs coin and funds the treasury.

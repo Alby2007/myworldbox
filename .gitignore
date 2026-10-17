@@ -1,0 +1,4 @@
+decompiled/
+build/bin/
+build/obj/
+game-api/*.cs

@@ -1,0 +1,220 @@
+{
+    "Jobs": [
+        {
+            "Id": "JobSeekWeight",
+            "Type": "SLIDER",
+            "FloatVal": 2.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 4.0
+        },
+        {
+            "Id": "JobSeekCooldown",
+            "Type": "SLIDER",
+            "FloatVal": 0.4,
+            "MinFloatVal": 0.05,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "JobDemandBoost",
+            "Type": "SLIDER",
+            "FloatVal": 1.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 3.0
+        },
+        {
+            "Id": "ExtraBuilders",
+            "Type": "SLIDER",
+            "FloatVal": 2.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 6.0
+        },
+        {
+            "Id": "ExtraFoodJobs",
+            "Type": "SLIDER",
+            "FloatVal": 3.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 8.0
+        },
+        {
+            "Id": "ExtraWoodcutters",
+            "Type": "SLIDER",
+            "FloatVal": 2.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 5.0
+        },
+        {
+            "Id": "LowFoodThreshold",
+            "Type": "SLIDER",
+            "FloatVal": 60.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 200.0
+        },
+        {
+            "Id": "LowWoodThreshold",
+            "Type": "SLIDER",
+            "FloatVal": 15.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 80.0
+        }
+    ],
+    "Expansion": [
+        {
+            "Id": "ExpansionWeight",
+            "Type": "SLIDER",
+            "FloatVal": 1.8,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 4.0
+        },
+        {
+            "Id": "ExpansionCooldown",
+            "Type": "SLIDER",
+            "FloatVal": 0.6,
+            "MinFloatVal": 0.1,
+            "MaxFloatVal": 1.0
+        }
+    ],
+    "Social": [
+        {
+            "Id": "ReproductionWeight",
+            "Type": "SLIDER",
+            "FloatVal": 1.3,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 4.0
+        },
+        {
+            "Id": "SocializeWeight",
+            "Type": "SLIDER",
+            "FloatVal": 1.6,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 4.0
+        }
+    ],
+    "Experimental": [
+        {
+            "Id": "AptitudeHiring",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "EmergencyDraft",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "DraftAttackerSlots",
+            "Type": "SLIDER",
+            "FloatVal": 4.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 8.0
+        },
+        {
+            "Id": "HousingCrisis",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "NoHouseReproMult",
+            "Type": "SLIDER",
+            "FloatVal": 0.15,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "JobXpAmount",
+            "Type": "SLIDER",
+            "FloatVal": 5.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 20.0
+        }
+    ],
+    "War": [
+        {
+            "Id": "MoraleRetreat",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "RetreatHealth",
+            "Type": "SLIDER",
+            "FloatVal": 0.35,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 0.9
+        },
+        {
+            "Id": "TraitMorale",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "SmartWarTarget",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "SmartCityTarget",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "MeritCaptains",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "MarchFill",
+            "Type": "SLIDER",
+            "FloatVal": 0.7,
+            "MinFloatVal": 0.3,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "WarTimeoutYears",
+            "Type": "SLIDER",
+            "FloatVal": 5.0,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 20.0
+        },
+        {
+            "Id": "WarMinWarriors",
+            "Type": "SLIDER",
+            "FloatVal": 10.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 50.0
+        },
+        {
+            "Id": "WarPeaceYears",
+            "Type": "SLIDER",
+            "FloatVal": 5.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 20.0
+        },
+        {
+            "Id": "WarStalemateYears",
+            "Type": "SLIDER",
+            "FloatVal": 12.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 30.0
+        },
+        {
+            "Id": "TrainWeight",
+            "Type": "SLIDER",
+            "FloatVal": 1.4,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 4.0
+        },
+        {
+            "Id": "TrainCooldown",
+            "Type": "SLIDER",
+            "FloatVal": 0.6,
+            "MinFloatVal": 0.05,
+            "MaxFloatVal": 1.0
+        }
+    ],
+    "Debug": [
+        {
+            "Id": "LogTuning",
+            "Type": "SWITCH",
+            "BoolVal": true
+        }
+    ]
+}

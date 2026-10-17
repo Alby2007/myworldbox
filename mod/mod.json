@@ -1,0 +1,11 @@
+{
+    "name": "Civ Mind Overhaul",
+    "author": "alber",
+    "version": "0.1.0",
+    "description": "Gameplay overhaul for citizen AI: demand-driven job seeking, boosted job quotas under city pressure, faster expansion, tuned reproduction and socializing.",
+    "GUID": "devin.civmind",
+    "targetGameBuild": 719,
+    "Dependencies": [],
+    "OptionalDependencies": [],
+    "IncompatibleWith": []
+}

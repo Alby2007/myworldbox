@@ -108,7 +108,18 @@ armies rout when beaten, and wars actually end.
 - **Education retune** — citizens read more often and with a relaxed intelligence gate (books → stats → leaders)
 - **Intensity-scaled firefighting** — `put_out_fire` weight scales with active fires; infernos get swarmed
 
-Every feature is toggleable/tunable in-game: **NML window → mod → Mod Configuration** (~180 options).
+### Wildlife & ecosystem (v1.2)
+
+- **Smart prey** — predators score wounded and young prey over merely-nearest targets (city hunters included)
+- **Pack hunting** — pack members converge on the alpha's kill target instead of scattering
+- **Dangerous frontier** — starving predators with no meat in range may stalk nearby villagers; big packs drag down larger prey
+- **Diversity-aware spawning** — biome spawns roll only over species below their population cap, so dominant species stop blocking rare ones
+- **Spawn rate & breeding cap** — `unit_spawn` interval and `animal_breeding_close_units_limit` tunables
+- **Hunger-driven hunts** — meat-hunt cooldowns shortened; starving predators' hunt weight scales with hunger
+- **Herd migration** — alphas relocate herds ~4× more often; strays form/join herds ~3× more readily
+- **Warier prey** — herbivores spot and flee predators earlier
+
+Every feature is toggleable/tunable in-game: **NML window → mod → Mod Configuration** (~195 options).
 See [docs/config-reference.md](docs/config-reference.md) for the full list.
 
 ## Install

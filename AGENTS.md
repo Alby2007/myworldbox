@@ -188,3 +188,21 @@
 - Launch game → NML button in main tab; mod logs `[CivMind]` lines to `%LocalLow%\mkarpenko\WorldBox\Player.log`
 - Health check: startup should log `[CivMind] reflection: N/N targets resolved` (any FAILED line names the broken member); live features announce once via `[CivMind] first fire: <feature>` — a feature that never fires is silently dead
 - Mod config UI: NML window → mod → "Mod Configuration" (uses `default_config.json`)
+
+## Mod features (v1.2 — wildlife & ecosystem, sharing `PatchMeatSource` on `BehFindMeatSource.execute` + `PatchWorldBehInit` on `WorldBehaviourLibrary.init`)
+
+89. Smart prey — `PatchMeatSource` prefix-supplant replicates the meat scan (keep-target check → `_meat_target_type` filter → `canAttackTarget` + size + island gates via `TargetOk`), scores `SquaredDistTile × (0.4 + healthRatio) × (isBaby ? 0.5 : 1)`; `_meat_target_type`/`_check_for_factions` private → `Ref.Field`; `beh_actor_target` via `Ref.FieldRef`; `BaseSimObject.a` internal → `Ref.Field`
+90. Pack hunting — same patch: non-civ, hasFamily, !isAlpha → `PackHuntChance` → adopt `family.getAlpha().beh_actor_target` if live + same island + attackable (no size re-check — pack members drag down what the alpha picked)
+91. Dangerous frontier — empty meat scan + non-civ → `FrontierChance` → `ScanCivs` over 2–5 chunks for `isKingdomCiv` units: same island + `canAttackTarget` (NO foe requirement — `isTargetOk`'s size gate is skipped only when `family.countUnits() >= FrontierPackSize`); sets `beh_actor_target` + Continue → `BehGoToActorTarget` pathing; logged `frontier hunt:`
+92. Diverse spawn — `PatchWorldBehInit` wraps `unit_spawn.action` (delegate `WorldBehaviourAction()`): replicates `updateUnitSpawn` (law → chunk check → `getRandomIslandGround` → `getRandomTile` → `pot_spawn_units_auto`) but filters `pot_units_spawn` to `units.Count < max_random_amount` BEFORE `GetRandom()` — fixes the dominant-species-blocks-everything bug; all capped → return (same as vanilla abort); crowd check `getUnitsFromChunk(tile,1)` >3 abort; spawn `Randy.randomInt(2,5)` via `World.world.units.spawnNewUnit(id, tile, false,false, 6f, null, true)`; ANY exception → `orig()` fallback
+93. Spawn rate + breeding cap — `unit_spawn.interval = 24.5f / AnimalSpawnMult` (only when ≠1); `animal_breeding_close_units_limit = ceil(6 × BreedingCapMult)` on every `ActorAsset.default_animal` in `AssetManager.actor_library.list` (only when ≠1)
+94. Hunger-driven hunts — `diet_meat`/`diet_blood`/`diet_meat_insect`: `RetuneMult` cd×`HuntRetryCooldown` + `HungerMult` = `1 + (1−getNutritionRatio()) × HuntHungerBoost` (composes orig custom weight)
+95. Herd migration — `Retune("family_alpha_move", 1, HerdMoveCooldown)` + `Retune("family_group_join_or_new_herd", HerdJoinWeight, 1)`
+96. Warier prey — `Retune("run_away_from_carnivore", PreyFleeWeight, 1)`
+
+### v1.2 access notes
+- `BehFindMeatSource` is `ai.behaviours.BehFindMeatSource` (internal class — `[HarmonyPatch(typeof(...))]` binds fine; `MeatTargetType` enum is public, `_meat_target_type`/`_check_for_factions` private fields)
+- `AssetManager.world_behaviours` is the library (NOT `behaviour_library`); `.get("unit_spawn")` → `WorldBehaviourAsset` (public `action`/`interval` fields)
+- `MapBox.islands_calculator`/`map_chunk_manager`, `IslandsCalculator.getRandomIslandGround(bool)`, `TileIsland.getRandomTile()` are internal → `Ref.Field`/`Ref.Method`
+- `islands_ground`/`WorldLawLibrary.world_law_animals_spawn`/`BiomeAsset.pot_units_spawn`/`pot_spawn_units_auto`/`ActorAsset.units`/`max_random_amount`/`default_animal`/`animal_breeding_close_units_limit`/`source_meat`/`source_meat_insect`/`actor_size` public; `WorldTile.Type.biome_asset` public via `TileTypeBase`
+- `Actor.family`/`hasFamily()`/`Family.isAlpha`/`getAlpha`/`countUnits`/`isKingdomCiv`/`isBaby`/`getHealthRatio`/`getNutritionRatio`/`isAlive` public

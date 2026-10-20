@@ -719,3 +719,66 @@ gate to `ReadMinInt` (3) — `BehFinishReading` writes book bonuses straight to
 `put_out_fire` weight wrap (compose-with-original): `w +
 min(city.tasks.fire, FireMaxBonus) × FireWeightPer` — weight 4 → 14 during
 infernos so big fires swarm while small ones stay routine.
+
+# War Pack 6 — Wildlife & Ecosystem (v1.2)
+
+## 89. Smart prey selection
+
+`PatchMeatSource` prefix-supplants `BehFindMeatSource.execute` (the shared
+meat hunt for `diet_meat` / `diet_blood` / `diet_meat_insect` — city hunters
+use the same task). Vanilla picks the *nearest* valid target; we score
+`dist × (0.4 + healthRatio) × (isBaby ? 0.5 : 1)` — wounded and young prey
+win over healthy adults. `_meat_target_type` / `_check_for_factions` are
+private → reflected; `beh_actor_target` via `Ref.FieldRef`. First-fire:
+`smart prey`.
+
+## 90. Pack hunting
+
+Same patch, after the scan: non-civ hunter with a family, not the alpha →
+`PackHuntChance` (0.8) roll → adopt `family.getAlpha().beh_actor_target`
+when it's a live same-island actor they can attack. Packs visibly converge
+on the alpha's kill instead of scattering. First-fire: `pack hunt`.
+
+## 91. Dangerous frontier
+
+When the meat scan finds nothing, non-civ hunters roll `FrontierChance`
+(1.0) and rescan 2–5 chunks for *civilized* units — `canAttackTarget` (no
+foe requirement, unlike `isTargetOk`) + same island + size ≤ attacker,
+waived when `family.countUnits() >= FrontierPackSize` (3) — a real pack can
+drag down bigger prey. Starving frontier wolves hunt villagers. Logged:
+`frontier hunt:` + first-fire.
+
+## 92. Diversity-aware spawning
+
+`PatchWorldBehInit` postfix wraps `unit_spawn.action` — vanilla rolls ONE
+species from `biome.pot_units_spawn` then aborts if it's over
+`max_random_amount`, so a capped dominant species silently blocks rare
+ones. We filter the pool to under-cap species *before* rolling (all capped
+→ nothing spawns, same as vanilla). First-fire: `diverse spawn`.
+
+## 93. Spawn rate & breeding cap
+
+`unit_spawn.interval = 24.5 / AnimalSpawnMult` (1 = vanilla).
+`animal_breeding_close_units_limit = ceil(6 × BreedingCapMult)` on every
+`default_animal` `ActorAsset` — controls how crowded a biome gets before
+herds stop breeding. Both in `PatchWorldBehInit`, `Once.PerInit`-guarded.
+
+## 94. Hunger-driven hunts
+
+`diet_meat` / `diet_blood` / `diet_meat_insect`: cooldown × `HuntRetryCooldown`
+(0.4 → retries in ~22s not 55s) + weight × `(1 + (1−nutrition) ×
+HuntHungerBoost)` — starving predators hunt far more aggressively.
+First-fire: `hungry hunt`.
+
+## 95. Herd migration
+
+`family_alpha_move` cooldown × `HerdMoveCooldown` (0.25 → 50s not 200s) —
+herds actually relocate instead of standing still for minutes.
+`family_group_join_or_new_herd` weight × `HerdJoinWeight` (3) — strays form
+and join herds much faster, feeding the pack-hunt/frontier systems.
+
+## 96. Warier prey
+
+`run_away_from_carnivore` weight × `PreyFleeWeight` (2) — deer/rabbits spot
+predators earlier and scatter, so smart-prey + pack tactics actually matter
+instead of predators walking up to victims.

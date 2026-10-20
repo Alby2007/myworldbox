@@ -91,6 +91,13 @@ namespace CivMindOverhaul
             {
                 WrapFirefighting();
             }
+            RetuneMult("diet_meat", 1f, Cfg.HuntRetryCooldown, HungerMult);
+            RetuneMult("diet_blood", 1f, Cfg.HuntRetryCooldown, HungerMult);
+            RetuneMult("diet_meat_insect", 1f, Cfg.HuntRetryCooldown, HungerMult);
+            Retune("family_alpha_move", 1f, Cfg.HerdMoveCooldown);
+            Retune("family_group_join_or_new_herd", Cfg.HerdJoinWeight, 1f);
+            Retune("run_away_from_carnivore", Cfg.PreyFleeWeight, 1f);
+
             if (Cfg.MoraleRetreat)
             {
                 ReworkRetreat("run_away");
@@ -98,21 +105,35 @@ namespace CivMindOverhaul
             WrapPlots();
         }
 
+        private static float HungerMult(Actor a)
+        {
+            if (a == null)
+            {
+                return 1f;
+            }
+            float m = 1f + (1f - a.getNutritionRatio()) * Cfg.HuntHungerBoost;
+            if (m > 1.01f)
+            {
+                First.Fire("hungry hunt");
+            }
+            return m;
+        }
+
         private static float CivReturnMult(Actor a)
         {
-            First.Fire("stranded civilian");
+            First.Fire("civ return eval");
             return 1f;
         }
 
         private static float BoatTaxiMult(Actor a)
         {
-            First.Fire("boat taxi pickup");
+            First.Fire("boat taxi eval");
             return 1f;
         }
 
         private static float ReadMult(Actor a)
         {
-            First.Fire("education");
+            First.Fire("read eval");
             return 1f;
         }
 

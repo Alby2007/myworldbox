@@ -3240,6 +3240,196 @@ namespace CivMindOverhaul
         }
     }
 
+    [HarmonyPatch(typeof(ai.behaviours.BehFindMeatSource), "execute")]
+    internal static class PatchMeatSource
+    {
+        private static readonly FieldInfo _meatType = Ref.Field(typeof(ai.behaviours.BehFindMeatSource), "_meat_target_type");
+        private static readonly FieldInfo _checkFactions = Ref.Field(typeof(ai.behaviours.BehFindMeatSource), "_check_for_factions");
+        private static readonly FieldInfo _simActor = Ref.Field(typeof(BaseSimObject), "a");
+        private static readonly MethodInfo _canAttack = Ref.Method(typeof(BaseSimObject), "canAttackTarget", new Type[]
+        {
+            typeof(BaseSimObject),
+            typeof(bool),
+            typeof(bool)
+        });
+        private static readonly AccessTools.FieldRef<Actor, BaseSimObject> _behTarget = TryRef();
+
+        private static AccessTools.FieldRef<Actor, BaseSimObject> TryRef()
+        {
+            try
+            {
+                return Ref.FieldRef<Actor, BaseSimObject>("beh_actor_target");
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static Actor ActorOf(BaseSimObject o)
+        {
+            return _simActor == null || o == null ? null : _simActor.GetValue(o) as Actor;
+        }
+
+        private static bool Prefix(ai.behaviours.BehFindMeatSource __instance, Actor pActor, ref BehResult __result)
+        {
+            if ((!Cfg.SmartPrey && !Cfg.PackHunting && !Cfg.DangerousFrontier)
+                || _meatType == null || _checkFactions == null || _simActor == null || _canAttack == null || _behTarget == null
+                || pActor == null || pActor.current_tile == null)
+            {
+                return true;
+            }
+            try
+            {
+                bool checkFactions = (bool)_checkFactions.GetValue(__instance);
+                BaseSimObject cur = _behTarget(pActor);
+                if (cur != null && TargetOk(pActor, ActorOf(cur), checkFactions))
+                {
+                    __result = BehResult.Continue;
+                    return false;
+                }
+                Actor pick = ScanMeat(__instance, pActor, checkFactions);
+                if (pick != null && Cfg.SmartPrey)
+                {
+                    First.Fire("smart prey");
+                }
+                if (Cfg.PackHunting && !pActor.isKingdomCiv() && pActor.hasFamily() && pActor.family != null
+                    && !pActor.family.isAlpha(pActor) && Randy.randomChance(Cfg.PackHuntChance))
+                {
+                    Actor alpha = pActor.family.getAlpha();
+                    if (alpha != null && alpha.isAlive() && alpha != pActor)
+                    {
+                        Actor at = ActorOf(_behTarget(alpha));
+                        if (at != null && at.isAlive() && at != pActor && at.current_tile != null
+                            && at.current_tile.isSameIsland(pActor.current_tile)
+                            && (bool)_canAttack.Invoke(pActor, new object[] { at, checkFactions, true }))
+                        {
+                            pick = at;
+                            First.Fire("pack hunt");
+                        }
+                    }
+                }
+                if (pick == null && Cfg.DangerousFrontier && !pActor.isKingdomCiv() && Randy.randomChance(Cfg.FrontierChance))
+                {
+                    pick = ScanCivs(pActor, checkFactions);
+                    if (pick != null)
+                    {
+                        First.Fire("frontier hunt");
+                        UnityEngine.Debug.Log("[CivMind] frontier hunt: " + pActor.getName() + " stalks " + pick.getName());
+                    }
+                }
+                _behTarget(pActor) = pick;
+                __result = pick == null ? BehResult.Stop : BehResult.Continue;
+                return false;
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[CivMind] meat source patch failed: " + e.Message);
+                return true;
+            }
+        }
+
+        private static bool TargetOk(Actor pActor, Actor pTarget, bool pCheckFactions)
+        {
+            if (pTarget == null || pTarget == pActor || !pTarget.isAlive() || pTarget.current_tile == null)
+            {
+                return false;
+            }
+            if (!(bool)_canAttack.Invoke(pActor, new object[] { pTarget, pCheckFactions, true }))
+            {
+                return false;
+            }
+            if (pTarget.asset.actor_size > pActor.asset.actor_size)
+            {
+                return false;
+            }
+            return pTarget.current_tile.isSameIsland(pActor.current_tile);
+        }
+
+        private static Actor ScanMeat(ai.behaviours.BehFindMeatSource pBeh, Actor pActor, bool pCheckFactions)
+        {
+            ai.behaviours.MeatTargetType mt = (ai.behaviours.MeatTargetType)_meatType.GetValue(pBeh);
+            WorldTile from = pActor.current_tile;
+            Actor best = null;
+            float bestScore = float.MaxValue;
+            foreach (Actor item in Finder.getUnitsFromChunk(from, Randy.randomInt(1, 3), 0f, Randy.randomBool()))
+            {
+                if (!TargetOk(pActor, item, pCheckFactions))
+                {
+                    continue;
+                }
+                bool sameSpecies = item.asset.id == pActor.asset.id;
+                if (mt == ai.behaviours.MeatTargetType.Meat)
+                {
+                    if (!item.asset.source_meat || sameSpecies)
+                    {
+                        continue;
+                    }
+                }
+                else if (mt == ai.behaviours.MeatTargetType.MeatSameSpecies)
+                {
+                    if (!sameSpecies)
+                    {
+                        continue;
+                    }
+                }
+                else if (!item.asset.source_meat_insect || sameSpecies)
+                {
+                    continue;
+                }
+                float score = Toolbox.SquaredDistTile(item.current_tile, from);
+                if (Cfg.SmartPrey)
+                {
+                    score *= 0.4f + item.getHealthRatio();
+                    if (item.isBaby())
+                    {
+                        score *= 0.5f;
+                    }
+                }
+                if (score < bestScore)
+                {
+                    bestScore = score;
+                    best = item;
+                }
+            }
+            return best;
+        }
+
+        private static Actor ScanCivs(Actor pActor, bool pCheckFactions)
+        {
+            bool packCanDragDown = pActor.hasFamily() && pActor.family.countUnits() >= Cfg.FrontierPackSize;
+            WorldTile from = pActor.current_tile;
+            Actor best = null;
+            float bestDist = float.MaxValue;
+            foreach (Actor item in Finder.getUnitsFromChunk(from, Randy.randomInt(2, 5), 0f, Randy.randomBool()))
+            {
+                if (item == null || item == pActor || !item.isAlive() || !item.isKingdomCiv() || item.current_tile == null)
+                {
+                    continue;
+                }
+                if (!item.current_tile.isSameIsland(from))
+                {
+                    continue;
+                }
+                if (!packCanDragDown && item.asset.actor_size > pActor.asset.actor_size)
+                {
+                    continue;
+                }
+                if (!(bool)_canAttack.Invoke(pActor, new object[] { item, pCheckFactions, true }))
+                {
+                    continue;
+                }
+                float d = Toolbox.SquaredDistTile(item.current_tile, from);
+                if (d < bestDist)
+                {
+                    bestDist = d;
+                    best = item;
+                }
+            }
+            return best;
+        }
+    }
+
     [HarmonyPatch(typeof(BehCityActorCheckAttack), "execute")]
     internal static class PatchCheckAttack
     {
@@ -3283,6 +3473,143 @@ namespace CivMindOverhaul
             }
             catch
             {
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(WorldBehaviourLibrary), "init")]
+    internal static class PatchWorldBehInit
+    {
+        private static readonly FieldInfo _islandsCalc = Ref.Field(typeof(MapBox), "islands_calculator");
+        private static readonly FieldInfo _chunkMgr = Ref.Field(typeof(MapBox), "map_chunk_manager");
+        private static readonly MethodInfo _randIsland = Ref.Method(typeof(IslandsCalculator), "getRandomIslandGround", new Type[] { typeof(bool) });
+        private static readonly MethodInfo _randTile = Ref.Method(typeof(TileIsland), "getRandomTile");
+
+        private static void Postfix()
+        {
+            if (!Once.PerInit("world_beh"))
+            {
+                return;
+            }
+            try
+            {
+                WorldBehaviourAsset spawn = AssetManager.world_behaviours == null
+                    ? null
+                    : AssetManager.world_behaviours.get("unit_spawn") as WorldBehaviourAsset;
+                if (spawn != null)
+                {
+                    if (Cfg.AnimalSpawnMult != 1f)
+                    {
+                        spawn.interval = 24.5f / Math.Max(0.01f, Cfg.AnimalSpawnMult);
+                        First.Fire("animal spawn rate");
+                    }
+                    if (Cfg.DiverseSpawn)
+                    {
+                        WorldBehaviourAction orig = spawn.action;
+                        spawn.action = delegate { DiverseSpawn(orig); };
+                    }
+                }
+                if (Cfg.BreedingCapMult != 1f && AssetManager.actor_library != null && AssetManager.actor_library.list != null)
+                {
+                    int cap = Math.Max(1, (int)Math.Ceiling(6 * Cfg.BreedingCapMult));
+                    for (int i = 0; i < AssetManager.actor_library.list.Count; i++)
+                    {
+                        ActorAsset a = AssetManager.actor_library.list[i];
+                        if (a != null && a.default_animal)
+                        {
+                            a.animal_breeding_close_units_limit = cap;
+                        }
+                    }
+                    First.Fire("breeding cap");
+                }
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[CivMind] world-beh init failed: " + e.Message);
+            }
+        }
+
+        private static void DiverseSpawn(WorldBehaviourAction orig)
+        {
+            if (_islandsCalc == null || _chunkMgr == null || _randIsland == null || _randTile == null)
+            {
+                if (orig != null)
+                {
+                    orig();
+                }
+                return;
+            }
+            try
+            {
+                if (!WorldLawLibrary.world_law_animals_spawn.isEnabled())
+                {
+                    return;
+                }
+                MapChunkManager cm = _chunkMgr.GetValue(World.world) as MapChunkManager;
+                if (cm == null || cm.chunks.Length == 0)
+                {
+                    return;
+                }
+                IslandsCalculator calc = _islandsCalc.GetValue(World.world) as IslandsCalculator;
+                if (calc == null || calc.islands_ground.Count == 0)
+                {
+                    return;
+                }
+                TileIsland island = _randIsland.Invoke(calc, new object[] { true }) as TileIsland;
+                if (island == null)
+                {
+                    return;
+                }
+                WorldTile tile = _randTile.Invoke(island, null) as WorldTile;
+                if (tile == null || tile.Type == null)
+                {
+                    return;
+                }
+                BiomeAsset biome = tile.Type.biome_asset;
+                if (biome == null || !biome.pot_spawn_units_auto || biome.pot_units_spawn == null)
+                {
+                    return;
+                }
+                List<string> pool = null;
+                for (int i = 0; i < biome.pot_units_spawn.Count; i++)
+                {
+                    ActorAsset aa = AssetManager.actor_library.get(biome.pot_units_spawn[i]);
+                    if (aa != null && aa.units.Count < aa.max_random_amount)
+                    {
+                        if (pool == null)
+                        {
+                            pool = new List<string>();
+                        }
+                        pool.Add(aa.id);
+                    }
+                }
+                if (pool == null)
+                {
+                    return;
+                }
+                int crowd = 0;
+                foreach (Actor item in Finder.getUnitsFromChunk(tile, 1))
+                {
+                    if (item != null && crowd++ > 3)
+                    {
+                        return;
+                    }
+                }
+                string pick = pool.GetRandom();
+                int n = Randy.randomInt(2, 5);
+                for (int i = 0; i < n; i++)
+                {
+                    World.world.units.spawnNewUnit(pick, tile, false, false, 6f, null, true);
+                }
+                First.Fire("diverse spawn");
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[CivMind] diverse spawn failed: " + e.Message);
+                if (orig != null)
+                {
+                    orig();
+                }
             }
         }
     }

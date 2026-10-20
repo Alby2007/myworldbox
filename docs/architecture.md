@@ -127,6 +127,8 @@ Every hook point, its mechanism, and its config gate:
 | `PatchStartWar` | `DiplomacyManager.startWar` | postfix | `TruceBreak` | Stamp `WarFx.TruceBreak` on early re-declaration |
 | `PatchOpinionInit` | `OpinionLibrary.init` | postfix | `BorderFriction`, `TruceBreak` | Wrap `opinion_borders.calc` + inject `opinion_truce_breaker` |
 | `PatchCombatInit` | `CombatActionLibrary.init` | postfix | `VetSpecials` | Wrap every `can_do_action` — veterans bypass failed checks |
+| `PatchMeatSource` | `BehFindMeatSource.execute` | prefix-supplant | `SmartPrey`, `PackHunting`, `DangerousFrontier` | Replicates the meat scan (meat-type filter, attackability, size gate, same island) with wounded/young scoring; pack followers adopt the alpha's `beh_actor_target`; empty scan → starving predators may target civs |
+| `PatchWorldBehInit` | `WorldBehaviourLibrary.init` | postfix (`Once.PerInit`) | `DiverseSpawn`, `AnimalSpawnMult`, `BreedingCapMult` | Wraps `unit_spawn.action` with a diversity-aware replication (filters over-cap species before rolling), retunes `interval`, rewrites `animal_breeding_close_units_limit` |
 
 Plus tuning-only features with no dedicated patch class (see `Tuning.Apply`):
 `find_city_job` demand weight, expansion/social/reproduction weights, housing-gated
@@ -135,6 +137,9 @@ and applies the commander aura), `warrior_train_with_dummy`, `check_warrior_tran
 retunes, the `check_join_city`/`check_join_empty_nearby_city` refugee weight wraps,
 the civilian-taxi retunes (`try_to_return_to_home_city`, `boat_transport_check`),
 `try_to_read` retune + relaxed launch gate, `put_out_fire` intensity-scaled weight,
+the wildlife retunes (`diet_meat`/`diet_blood`/`diet_meat_insect` cooldown +
+hunger-scaled weight, `family_alpha_move`, `family_group_join_or_new_herd`,
+`run_away_from_carnivore`),
 and the economy retunes: `give_tax`, `make_items`, `try_to_take_city_item` (danger
 spike), `boat_trading`/`boat_fishing` (wartime blockade wrap).
 
@@ -212,5 +217,11 @@ null-checked invocation — if a game update renames a member, the patch degrade
 | `Actor.data` | field | `Rebel`/`PatchIsWarNeeded` (`ActorData.money` war chest) |
 | `City.setCulture`, `City.setReligion` | method | `PatchCheckLoyalty` (assimilation) |
 | `City.addZone`, `City.removeZone` | method | `PatchBorderSteal` (zone grab) |
+| `BehFindMeatSource._meat_target_type`, `._check_for_factions` | private field | `PatchMeatSource` (target-type filter, faction check) |
+| `BaseSimObject.a` | internal field | `PatchMeatSource` (`beh_actor_target` → `Actor`) |
+| `Actor.beh_actor_target` | internal field (FieldRef) | `PatchMeatSource` (scan result + pack-hunt override) |
+| `MapBox.islands_calculator`, `.map_chunk_manager` | internal field | `PatchWorldBehInit` (spawn replication) |
+| `IslandsCalculator.getRandomIslandGround(bool)` | internal method | `PatchWorldBehInit` |
+| `TileIsland.getRandomTile` | internal method | `PatchWorldBehInit` |
 
 See [patching-guide.md](patching-guide.md) for the conventions in detail.

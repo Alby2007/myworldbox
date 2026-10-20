@@ -312,6 +312,27 @@ v1.0 diplomacy layer — war exits, peace plots, and reputation.
 | `TributeYears` | Tribute duration (years) | slider | 10 | 1–50 | Deal length after a decisive win |
 | `TributeAnnual` | Tribute per year (gold) | slider | 15 | 0–100 | `min(this, available gold)` per year |
 
+## Wildlife
+
+v1.2 ecosystem layer — hunting, packs, spawning, and herd behavior.
+
+| Id | Label | Type | Default | Range | Controls |
+|---|---|---|---|---|---|
+| `SmartPrey` | Smart prey selection | switch | on | — | Wounded/young prey preferred over nearest (`dist × (0.4+health) × (baby?0.5:1)`) |
+| `PackHunting` | Pack hunting | switch | on | — | Non-alpha family members adopt the alpha's kill target |
+| `PackHuntChance` | Pack convergence chance | slider | 0.8 | 0–1 | Roll per meat-search tick |
+| `DangerousFrontier` | Dangerous frontier | switch | on | — | Starving non-civ predators may hunt civ units when no meat is found |
+| `FrontierPackSize` | Pack size to hunt big prey | slider | 3 | 1–20 | Family size needed to ignore the size limit vs civs |
+| `FrontierChance` | Frontier hunt chance | slider | 1.0 | 0–1 | Roll when the meat scan finds nothing |
+| `DiverseSpawn` | Diversity-aware spawning | switch | on | — | Filters capped species before rolling — rare species can still spawn |
+| `AnimalSpawnMult` | Animal spawn rate x | slider | 1.0 | 0.1–5 | `unit_spawn.interval = 24.5 / this` |
+| `BreedingCapMult` | Breeding cap x | slider | 1.0 | 0–5 | `animal_breeding_close_units_limit = ceil(6 × this)` on all `default_animal` assets |
+| `HuntRetryCooldown` | Hunt retry cooldown x | slider | 0.4 | 0.05–2 | `diet_meat`/`diet_blood`/`diet_meat_insect` cooldown (55 → ~22s) |
+| `HuntHungerBoost` | Hunger hunt boost | slider | 1.5 | 0–5 | Weight × `1 + (1−nutrition) × this` — starving predators hunt more |
+| `HerdMoveCooldown` | Herd move cooldown x | slider | 0.25 | 0.05–2 | `family_alpha_move` cooldown (200 → 50s) |
+| `HerdJoinWeight` | Herd join weight x | slider | 3.0 | 0–10 | `family_group_join_or_new_herd` weight — herds form faster |
+| `PreyFleeWeight` | Prey flee weight x | slider | 2.0 | 0–10 | `run_away_from_carnivore` weight — prey spots hunters earlier |
+
 ## Debug
 
 | Id | Label | Default | Controls |

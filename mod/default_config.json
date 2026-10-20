@@ -154,7 +154,7 @@
             "Type": "SLIDER",
             "FloatVal": 3.0,
             "MinFloatVal": 0.0,
-            "MaxFloatVal": 10.0
+            "MaxFloatVal": 5.0
         },
         {
             "Id": "Firefighting",
@@ -1465,6 +1465,98 @@
             "FloatVal": 15.0,
             "MinFloatVal": 0.0,
             "MaxFloatVal": 100.0
+        }
+    ],
+    "Wildlife": [
+        {
+            "Id": "SmartPrey",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "PackHunting",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "PackHuntChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.8,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "DangerousFrontier",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "FrontierPackSize",
+            "Type": "SLIDER",
+            "FloatVal": 3.0,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 20.0
+        },
+        {
+            "Id": "FrontierChance",
+            "Type": "SLIDER",
+            "FloatVal": 1.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "DiverseSpawn",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "AnimalSpawnMult",
+            "Type": "SLIDER",
+            "FloatVal": 1.0,
+            "MinFloatVal": 0.1,
+            "MaxFloatVal": 5.0
+        },
+        {
+            "Id": "BreedingCapMult",
+            "Type": "SLIDER",
+            "FloatVal": 1.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 5.0
+        },
+        {
+            "Id": "HuntRetryCooldown",
+            "Type": "SLIDER",
+            "FloatVal": 0.4,
+            "MinFloatVal": 0.05,
+            "MaxFloatVal": 2.0
+        },
+        {
+            "Id": "HuntHungerBoost",
+            "Type": "SLIDER",
+            "FloatVal": 1.5,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 5.0
+        },
+        {
+            "Id": "HerdMoveCooldown",
+            "Type": "SLIDER",
+            "FloatVal": 0.25,
+            "MinFloatVal": 0.05,
+            "MaxFloatVal": 2.0
+        },
+        {
+            "Id": "HerdJoinWeight",
+            "Type": "SLIDER",
+            "FloatVal": 3.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 10.0
+        },
+        {
+            "Id": "PreyFleeWeight",
+            "Type": "SLIDER",
+            "FloatVal": 2.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 10.0
         }
     ],
     "Debug": [

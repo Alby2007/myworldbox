@@ -159,6 +159,19 @@ The mod reads `internal`/`private` members via cached `AccessTools` handles
 (static readonly `FieldInfo`/`MethodInfo`, resolved once per patch class). Everything goes through
 null-checked invocation — if a game update renames a member, the patch degrades gracefully.
 
+`Guard.cs` adds three shared helpers:
+
+- **`Ref`** — wraps every `AccessTools.Field`/`Method`/`FieldRefAccess` lookup and records the
+  outcome. `Ref.Report()` (called from `Main` after `PatchAll`) force-runs the static constructors
+  of all `[HarmonyPatch]` classes and any type holding `FieldInfo`/`MethodInfo` fields, then logs
+  `[CivMind] reflection: N/M targets resolved` — or a `FAILED:` list naming the broken members when
+  a game update renames something.
+- **`First`** — `First.Fire("label")` logs `[CivMind] first fire: <label>` once per feature at the
+  point it actually changes game state. Grepping `first fire:` in `Player.log` shows which features
+  are alive without auditing code.
+- **`Once`** — `Once.PerInit(key)` returns true exactly once; replaces hand-rolled `_done` flags on
+  `Library.init` postfixes that install delegate wraps (a second wrap would stack multipliers).
+
 | Member | Access | Used by |
 |---|---|---|
 | `City._timer_warrior` | field | `PatchSetCitizenJob` (draft cooldown check) |

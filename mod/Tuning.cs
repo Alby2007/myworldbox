@@ -8,13 +8,14 @@ namespace CivMindOverhaul
 {
     internal static class Tuning
     {
-        private static readonly MethodInfo _hasWeapon = AccessTools.Method(typeof(Actor), "hasWeapon");
+        private static readonly MethodInfo _hasWeapon = Ref.Method(typeof(Actor), "hasWeapon");
 
         private static readonly Dictionary<string, float> _origWeight = new Dictionary<string, float>();
         private static readonly Dictionary<string, int> _origCooldown = new Dictionary<string, int>();
         private static readonly Dictionary<string, DecisionActionWeight> _origCustom = new Dictionary<string, DecisionActionWeight>();
-        private static PlotCheckerDelegate _origAllianceDestroyCheck;
-        private static bool _peacePlotDone;
+        private static readonly Dictionary<string, float> _preRefugeeWeight = new Dictionary<string, float>();
+        private static readonly Dictionary<string, DecisionActionWeight> _preRefugeeCustom = new Dictionary<string, DecisionActionWeight>();
+
 
         public static void TryApply()
         {
@@ -89,7 +90,12 @@ namespace CivMindOverhaul
 
         private static float DangerArmMult(Actor a)
         {
-            return a.city != null && a.city.isInDanger() ? Cfg.ArmDangerMult : 1f;
+            if (a.city != null && a.city.isInDanger())
+            {
+                First.Fire("danger arming");
+                return Cfg.ArmDangerMult;
+            }
+            return 1f;
         }
 
         private static float GoldenAgeMult(Actor a)
@@ -107,6 +113,7 @@ namespace CivMindOverhaul
                 }
                 if (k != null && Rebel.PeaceYears(k) >= Cfg.GoldenAgeYears)
                 {
+                    First.Fire("golden age crafting");
                     return Cfg.GoldenAgeMult;
                 }
             }
@@ -132,10 +139,11 @@ namespace CivMindOverhaul
                 }
                 if (k != null && !World.world.wars.hasWars(k))
                 {
-                    using (IEnumerator<War> e = World.world.wars.getActiveWars().GetEnumerator())
+                    foreach (War w in World.world.wars)
                     {
-                        if (e.MoveNext())
+                        if (!w.hasEnded())
                         {
+                            First.Fire("profiteer trade");
                             return m * Cfg.WarProfiteerMult;
                         }
                     }
@@ -162,6 +170,7 @@ namespace CivMindOverhaul
             {
                 if (World.world.wars.hasWars(k))
                 {
+                    First.Fire("blockade trade");
                     return Cfg.TradeWarMult;
                 }
             }
@@ -202,7 +211,7 @@ namespace CivMindOverhaul
                     return orig(a) * w * pMult(a);
                 };
             }
-            d.cooldown = (int)(_origCooldown[pId] * pCooldownMult);
+            d.cooldown = Math.Max(1, (int)(_origCooldown[pId] * pCooldownMult));
             Log($"retuned {pId}: weight x{pWeightMult} (+situational), cooldown x{pCooldownMult}");
         }
 
@@ -265,14 +274,24 @@ namespace CivMindOverhaul
                 d.has_weight_custom = true;
                 d.weight_calculate_custom = delegate(Actor a)
                 {
-                    return a.hasHouse() ? w * Cfg.ReproductionWeight : w * Cfg.NoHouseReproMult;
+                    if (!a.hasHouse())
+                    {
+                        First.Fire("housing crisis");
+                        return w * Cfg.NoHouseReproMult;
+                    }
+                    return w * Cfg.ReproductionWeight;
                 };
             }
             else
             {
                 d.weight_calculate_custom = delegate(Actor a)
                 {
-                    return a.hasHouse() ? orig(a) * Cfg.ReproductionWeight : orig(a) * Cfg.NoHouseReproMult;
+                    if (!a.hasHouse())
+                    {
+                        First.Fire("housing crisis");
+                        return orig(a) * Cfg.NoHouseReproMult;
+                    }
+                    return orig(a) * Cfg.ReproductionWeight;
                 };
             }
             d.cooldown = _origCooldown[pId];
@@ -293,9 +312,14 @@ namespace CivMindOverhaul
                 _origCooldown[pId] = d.cooldown;
                 _origCustom[pId] = d.weight_calculate_custom;
             }
-            DecisionActionWeight orig = _origCustom[pId];
-            float w = _origWeight[pId];
-            if (orig == null)
+            if (!_preRefugeeWeight.ContainsKey(pId))
+            {
+                _preRefugeeWeight[pId] = d.weight;
+                _preRefugeeCustom[pId] = d.weight_calculate_custom;
+            }
+            DecisionActionWeight pre = _preRefugeeCustom[pId];
+            float w = _preRefugeeWeight[pId];
+            if (pre == null)
             {
                 d.has_weight_custom = true;
                 d.weight_calculate_custom = delegate(Actor a)
@@ -307,10 +331,9 @@ namespace CivMindOverhaul
             {
                 d.weight_calculate_custom = delegate(Actor a)
                 {
-                    return orig(a) * RefugeeMult(a);
+                    return pre(a) * RefugeeMult(a);
                 };
             }
-            d.cooldown = _origCooldown[pId];
             Log($"retuned {pId}: refugee-boosted");
         }
 
@@ -324,6 +347,7 @@ namespace CivMindOverhaul
             {
                 if (World.world.wars.hasWars(a.kingdom))
                 {
+                    First.Fire("war refugees");
                     return Cfg.RefugeeBoost;
                 }
             }
@@ -335,13 +359,12 @@ namespace CivMindOverhaul
 
         internal static void WrapPlots()
         {
-            if (Cfg.AntiHegemon && _origAllianceDestroyCheck == null)
+            if (Cfg.AntiHegemon)
             {
                 PlotAsset destroy = AssetManager.plots_library == null ? null : AssetManager.plots_library.get("alliance_destroy") as PlotAsset;
-                if (destroy != null && destroy.check_is_possible != null)
+                if (destroy != null && destroy.check_is_possible != null && Once.PerInit("alliance_destroy"))
                 {
-                    _origAllianceDestroyCheck = destroy.check_is_possible;
-                    PlotCheckerDelegate orig = _origAllianceDestroyCheck;
+                    PlotCheckerDelegate orig = destroy.check_is_possible;
                     destroy.check_is_possible = delegate(Actor a)
                     {
                         if (orig(a))
@@ -368,6 +391,7 @@ namespace CivMindOverhaul
                             {
                                 if (m.isSupreme())
                                 {
+                                    First.Fire("alliance break plot");
                                     return true;
                                 }
                             }
@@ -380,12 +404,11 @@ namespace CivMindOverhaul
                     Log("wrapped alliance_destroy: members may break hegemon blocs");
                 }
             }
-            if (Cfg.PeacePlots && !_peacePlotDone)
+            if (Cfg.PeacePlots)
             {
                 PlotAsset stop = AssetManager.plots_library == null ? null : AssetManager.plots_library.get("attacker_stop_war") as PlotAsset;
-                if (stop != null)
+                if (stop != null && Once.PerInit("peace_plot"))
                 {
-                    _peacePlotDone = true;
                     stop.min_diplomacy = (int)Cfg.PeacePlotDiplo;
                     stop.money_cost = (int)Cfg.PeacePlotCost;
                     stop.try_to_start_advanced = delegate(Actor pActor, PlotAsset pPlotAsset, bool pForced)
@@ -425,6 +448,7 @@ namespace CivMindOverhaul
                             if (p3.isActive() && p3.isSameType(pPlotAsset) && p3.target_war == war)
                             {
                                 pActor.setPlot(p3);
+                                First.Fire("peace plot");
                                 return true;
                             }
                         }
@@ -434,6 +458,7 @@ namespace CivMindOverhaul
                         {
                             UnityEngine.Debug.Log("tryPlotStopWar is missing start requirements");
                         }
+                        First.Fire("peace plot");
                         return true;
                     };
                     Log("retuned attacker_stop_war: diplo " + (int)Cfg.PeacePlotDiplo + ", cost " + (int)Cfg.PeacePlotCost + ", ratio " + Cfg.PeacePlotRatio);
@@ -475,9 +500,11 @@ namespace CivMindOverhaul
                     if (cap != null && !cap.isRekt() && cap.current_tile != null && (float)Toolbox.SquaredDistTile(a.current_tile, cap.current_tile) <= Cfg.AuraRadius * Cfg.AuraRadius)
                     {
                         t *= Cfg.AuraFleeMult;
-                        if (Cfg.ArmyVeterancy && WarFx.VetArmies.ContainsKey(a.army.id))
+                        First.Fire("commander aura");
+                        if (Cfg.ArmyVeterancy && WarFx.IsVeteran(a.army.id))
                         {
                             t /= Cfg.VetArmyAura;
+                            First.Fire("veteran aura");
                         }
                     }
                 }
@@ -487,14 +514,20 @@ namespace CivMindOverhaul
                     if (WarFx.Shaken.TryGetValue(a.army.id, out shockExp) && shockExp > Time.time)
                     {
                         float mult = Cfg.ShockFleeMult;
-                        if (Cfg.ArmyVeterancy && WarFx.VetArmies.ContainsKey(a.army.id))
+                        if (Cfg.ArmyVeterancy && WarFx.IsVeteran(a.army.id))
                         {
                             mult = 1f + (mult - 1f) * (1f - Cfg.VetShockResist);
                         }
                         t = Math.Min(0.95f, t * mult);
+                        First.Fire("shock rout");
                     }
                 }
-                return a.getHealthRatio() < t;
+                if (a.getHealthRatio() < t)
+                {
+                    First.Fire("morale retreat");
+                    return true;
+                }
+                return false;
             };
             Log($"reworked {pId}: rout when health < {Cfg.RetreatHealth} (vanilla: only while > 0.2)");
         }
@@ -518,6 +551,7 @@ namespace CivMindOverhaul
                 if (free > 0)
                 {
                     num += Math.Min(free, 4) * Cfg.JobDemandBoost;
+                    First.Fire("demand-aware jobs");
                 }
             }
             return num;

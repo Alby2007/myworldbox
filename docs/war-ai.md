@@ -518,7 +518,9 @@ the nomad pool — a standing army funded by gold, not population growth.
 ## 63. Embargo escalation
 
 Vanilla `getDockTradeTarget` already refuses *direct* enemy docks.
-`PatchDockTarget` postfix extends it alliance-wide: if the candidate dock's
+`PatchDockTarget` postfix first blocks docks owned by the boat's *own*
+enemies (dock-level own-war embargo on top of the sea-zone check), then
+extends it alliance-wide: if the candidate dock's
 kingdom is at war with **any** member of the boat's alliance, the target is
 nulled — the run aborts and enemy docks get no traffic at all. Collective
 economic siege as a war layer.
@@ -599,9 +601,12 @@ promoted into `WarFx.VetArmies`. Veteran armies get amplified captain auras
 
 ## 74. Veteran retention
 
-`PatchWarriorStillOk` postfix: when vanilla decides a warrior should demobilize
+`PatchWarriorStillOk` **prefix**: when vanilla would demobilize a warrior
 (army over limit / food shortage), units with `kills ≥ VetKeepKills` (8) are
-retained at `VetKeepChance` (70%) — veterans survive the drawdown.
+retained at `VetKeepChance` (70%) — veterans survive the drawdown. It must be
+a prefix-supplant (re-running the reflected `isArmyOverLimit` +
+`hasEnoughFoodForArmy` checks) because vanilla calls `stopBeingWarrior()`
+*before* returning false — a postfix can't resurrect the demobilized unit.
 
 ## 75. Combined arms
 
@@ -620,9 +625,11 @@ walls faster; the clamp keeps single-defender math intact.
 
 ## 77. Separate peace
 
-`PatchWarUpdate`: wars older than `SepPeaceYears` roll `SepPeaceChance` — a
-non-main participant whose warriors fell below `SepPeaceShare` (25%) of its
-main-belligerent's calls `War.leaveWar` and exits. Logged: `separate peace:`.
+`PatchWarUpdate`: wars older than `SepPeaceYears` roll `SepPeaceChance`, but
+only once per 5 s per war (`_sepPeaceNext` — `War.update` runs every frame, so
+an unthrottled 10% roll would fire almost instantly). A non-main participant
+whose warriors fell below `SepPeaceShare` (25%) of its main-belligerent's
+calls `War.leaveWar` and exits. Logged: `separate peace:`.
 
 ## 78. Peace-plot retune
 

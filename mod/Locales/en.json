@@ -90,6 +90,8 @@
     "SiegeStarvation": "Besieged cities lose food",
     "SiegeFoodDrain": "Food drained per tick",
     "SiegeDrainChance": "Siege drain chance",
+    "BorderPressure": "Border zones shift during war",
+    "BorderPressureChance": "Border pressure chance",
     "ReconBuilders": "Post-war extra builders",
     "ReconYears": "Reconstruction window (years)",
     "WarExhaustYears": "War exhaustion after (years)",

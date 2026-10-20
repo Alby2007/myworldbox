@@ -133,7 +133,7 @@
 ## Mod features (v0.9 — deeper plays)
 
 62. Mercenaries — `Actor.joinCity` postfix: adult civ migrant (non-boat, non-warrior) + `MercenaryChance` + city gold ≥ `MercenaryCost` → `takeResource` → `a.addMoney` → reflected `tryToMakeWarrior` enlist
-63. Embargo — `ai.ActorTool.getDockTradeTarget(Actor)` postfix (overloaded → argTypes): vanilla already skips direct enemies; alliance members' boats also skip docks whose kingdom is enemy of ANY alliance member (note `ai` namespace; `Docks.building` internal → reflect `BaseBuildingComponent.building`)
+63. Embargo — `ai.ActorTool.getDockTradeTarget(Actor)` postfix (overloaded → argTypes): own-kingdom enemy docks blocked for every boat; alliance members' boats also skip docks whose kingdom is enemy of ANY alliance member (note `ai` namespace; `Docks.building` internal → reflect `BaseBuildingComponent.building`)
 64. War profiteers — `boat_trading` weight wrap = `BlockadeMult × ProfiteerMult`: boat kingdom peaceful + `wars.getActiveWars()` non-empty → ×`WarProfiteerMult`
 
 ## Mod features (v1.0 — combat depth & statecraft; three new config groups: Combat, Armies, Statecraft)
@@ -147,10 +147,10 @@
 71. Formations/kiting — `TickFormations`: `WeaponType.Range` units with a target inside `KiteRange` write `beh_tile_target` to the neighbor tile farthest from the enemy (`KiteChance`/tick; engaged units only)
 72. Relief marches — `TickRelief`: captain idle + a kingdom city `isGettingCaptured`/`isInDanger` on same island → all units' `beh_tile_target` = city tile (`ReliefChance`)
 73. Army veterancy — `TickVeterancy`: avg kills ≥ `VetArmyKills` → `WarFx.VetArmies`; `ReworkRetreat` gives vet armies `/VetArmyAura` under captain aura and shock resist (`ShockFleeMult` lerped toward 1 by `VetShockResist`)
-74. Veteran retention — `PatchWarriorStillOk` postfix: `kills ≥ VetKeepKills` + `VetKeepChance` → `__result=true` keeps warrior on demobilize checks
+74. Veteran retention — `PatchWarriorStillOk` **prefix**-supplant: `kills ≥ VetKeepKills` + `VetKeepChance` → `__result=true` keeps warrior; replicates vanilla checks (`isArmyOverLimit` is private → reflected, `hasEnoughFoodForArmy` public) — must be prefix: vanilla calls `stopBeingWarrior()` before returning so a postfix can't undo it
 75. Combined arms — `PatchGiveItem` supplant: wartime army `melee > ranged×(1-RangeShare)/RangeShare` → give from ranged-only sublist, vanilla giveItem body replicated incl. `_storage_version++`
 76. Siege momentum — `PatchUpdateCapture` on private `City.updateCapture(float)`: `(capturingUnits-1) × MomentumPerUnit × elapsed` added to `_capture_ticks`, capped at 10 effective units
-77. Separate peace — `PatchWarUpdate`: war age ≥ `SepPeaceYears` + `SepPeaceChance` roll → non-main participant below `SepPeaceShare` of main's warriors calls `leaveWar`
+77. Separate peace — `PatchWarUpdate`: war age ≥ `SepPeaceYears`, throttled `_sepPeaceNext` (5s recheck per war — `War.update` runs every frame) + `SepPeaceChance` roll → non-main participant below `SepPeaceShare` of main's warriors calls `leaveWar`
 78. Peace plots — `WrapPlots` retunes `attacker_stop_war` (diplo/cost/ratio configurable); vanilla `try_to_start_advanced` reuse loop replicated so same-war plots are joined not duplicated
 79. Two-front wars — `PatchIsWarNeeded`: `__result==false` + `isSupreme` + `hasEnemies` + already at war → cheap gates (capital, `WarMinWarriors`) + `TwoFrontChance` → true
 80. Border friction — `PatchOpinionInit` wraps `opinion_borders.calc` → result × `BorderFrictionMult`
@@ -162,7 +162,11 @@
 - `City.giveItem(Actor, List<long>, City)` is **public static**, returns bool — `PatchGiveItem` diffs total equipped `Item.getValue()` across all `EquipmentType` slots (prefix `__state` → postfix charge `ActorData.money`, deposit to city gold; free while `isInDanger`)
 - `ActorData.loot`/`money` are public int props once `Actor.data` is reflected; `Kingdom.king`/`capital`, `City.status.warriors_current`, `Building.current_tile`, `Toolbox.Dist` are public
 - `BehBoatMakeTrade.execute` gives the boat +5 inventory gold (delivered home by vanilla unload); trade-income bonus rides the same inventory path
-- `private` but patchable by name: `Actor.increaseKills`, `Army.findCaptain`, `CityBehCheckAttackZone.findTargetCity`
+- `private` but patchable by name: `Actor.increaseKills`, `Army.findCaptain`, `CityBehCheckAttackZone.findTargetCity`, `City.isArmyOverLimit` (invoke via reflected `MethodInfo`)
+- Hot paths (army tick, flee, getHit): use `AccessTools.FieldRefAccess<T,F>("field")` → `FieldRef` delegate (`_ref(obj)` read, `_ref(obj) = v` write) — near-field speed vs `FieldInfo.GetValue`; guard `== null` and fall back since it can throw on bad field type. `Rebel.Data(actor)` wraps `ActorData` access with FieldInfo fallback
+- Idempotence: `Library.init` postfixes re-run (world reloads) — delegate wraps/asset adds MUST be one-shot guarded via `Once.PerInit(key)` (Guard.cs) or wraps stack multipliers
+- Runtime hardening (Guard.cs): all `AccessTools` lookups go through `Ref.Field/Method/FieldRef` which track resolved-vs-failed → `Ref.Report()` (called from `Main` after `PatchAll`) primes every `[HarmonyPatch]` + reflection-holding class ctor and logs `[CivMind] reflection: N/M targets resolved — FAILED: ...`; `First.Fire("label")` logs `[CivMind] first fire: <label>` once per feature — grep `first fire:` in Player.log to see which of the 82 features are actually alive
+- `War.update` runs every frame per war — any per-war logic needs a per-war cooldown dict (`_sepPeaceNext`) not just a randomChance gate
 - `hasCity()` is internal on Actor — use `a.city != null`
 - `Kingdom` warrior check is `hasEnemies()`/`wars.hasWars(k)` — no `hasWars()` on Kingdom
 - `isKingdomCiv()` is public on `BaseSimObject`; `Army.findCaptain`, `CityBehCheckAttackZone.findTargetCity` are private (patchable by name)
@@ -173,4 +177,5 @@
 
 ## Verify
 - Launch game → NML button in main tab; mod logs `[CivMind]` lines to `%LocalLow%\mkarpenko\WorldBox\Player.log`
+- Health check: startup should log `[CivMind] reflection: N/N targets resolved` (any FAILED line names the broken member); live features announce once via `[CivMind] first fire: <feature>` — a feature that never fires is silently dead
 - Mod config UI: NML window → mod → "Mod Configuration" (uses `default_config.json`)

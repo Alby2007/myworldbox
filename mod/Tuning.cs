@@ -9,10 +9,12 @@ namespace CivMindOverhaul
     internal static class Tuning
     {
         private static readonly MethodInfo _hasWeapon = Ref.Method(typeof(Actor), "hasWeapon");
+        private static readonly FieldInfo _stats = Ref.Field(typeof(BaseSimObject), "stats");
 
         private static readonly Dictionary<string, float> _origWeight = new Dictionary<string, float>();
         private static readonly Dictionary<string, int> _origCooldown = new Dictionary<string, int>();
         private static readonly Dictionary<string, DecisionActionWeight> _origCustom = new Dictionary<string, DecisionActionWeight>();
+        private static readonly Dictionary<string, DecisionAction> _origLaunch = new Dictionary<string, DecisionAction>();
         private static readonly Dictionary<string, float> _preRefugeeWeight = new Dictionary<string, float>();
         private static readonly Dictionary<string, DecisionActionWeight> _preRefugeeCustom = new Dictionary<string, DecisionActionWeight>();
 
@@ -81,11 +83,112 @@ namespace CivMindOverhaul
             RetuneMult("try_to_take_city_item", Cfg.ItemArmWeight, Cfg.ItemArmCooldown, DangerArmMult);
             RetuneMult("boat_trading", Cfg.TradeWeight, 1f, BoatTradeMult);
             Retune("boat_fishing", Cfg.TradeWeight, 1f);
+            RetuneMult("try_to_return_to_home_city", Cfg.CivReturnWeight, Cfg.CivReturnCooldown, CivReturnMult);
+            RetuneMult("boat_transport_check", Cfg.BoatTaxiWeight, 1f, BoatTaxiMult);
+            RetuneMult("try_to_read", Cfg.ReadWeight, Cfg.ReadCooldown, ReadMult);
+            WrapReadLaunch();
+            if (Cfg.Firefighting)
+            {
+                WrapFirefighting();
+            }
             if (Cfg.MoraleRetreat)
             {
                 ReworkRetreat("run_away");
             }
             WrapPlots();
+        }
+
+        private static float CivReturnMult(Actor a)
+        {
+            First.Fire("stranded civilian");
+            return 1f;
+        }
+
+        private static float BoatTaxiMult(Actor a)
+        {
+            First.Fire("boat taxi pickup");
+            return 1f;
+        }
+
+        private static float ReadMult(Actor a)
+        {
+            First.Fire("education");
+            return 1f;
+        }
+
+        private static BaseStats StatsOf(BaseSimObject o)
+        {
+            return _stats == null || o == null ? null : _stats.GetValue(o) as BaseStats;
+        }
+
+        private static void WrapReadLaunch()
+        {
+            DecisionAsset d = Find("try_to_read");
+            if (d == null)
+            {
+                Log("missing decision: try_to_read");
+                return;
+            }
+            if (!_origLaunch.ContainsKey(d.id))
+            {
+                _origLaunch[d.id] = d.action_check_launch;
+            }
+            DecisionAction orig = _origLaunch[d.id];
+            d.action_check_launch = delegate(Actor a)
+            {
+                if (orig != null && orig(a))
+                {
+                    return true;
+                }
+                if (a == null || a.city == null)
+                {
+                    return false;
+                }
+                BaseStats s = StatsOf(a);
+                if (s == null || s["intelligence"] <= Cfg.ReadMinInt)
+                {
+                    return false;
+                }
+                if (a.city.hasBooksToRead(a))
+                {
+                    First.Fire("education relax");
+                    return true;
+                }
+                return false;
+            };
+        }
+
+        private static void WrapFirefighting()
+        {
+            DecisionAsset d = Find("put_out_fire");
+            if (d == null)
+            {
+                Log("missing decision: put_out_fire");
+                return;
+            }
+            if (!_origWeight.ContainsKey(d.id))
+            {
+                _origWeight[d.id] = d.weight;
+                _origCustom[d.id] = d.weight_calculate_custom;
+            }
+            DecisionActionWeight orig = _origCustom[d.id];
+            float w = _origWeight[d.id];
+            d.has_weight_custom = true;
+            d.weight_calculate_custom = delegate(Actor a)
+            {
+                float baseW = orig == null ? w : orig(a);
+                if (a != null && a.city != null)
+                {
+                    int fires = a.city.tasks.fire;
+                    if (fires > 0)
+                    {
+                        First.Fire("firefighting surge");
+                        return baseW + Math.Min(fires, Cfg.FireMaxBonus) * Cfg.FireWeightPer;
+                    }
+                }
+                return baseW;
+            };
+            Log("wrapped put_out_fire: intensity-scaled weight");
         }
 
         private static float DangerArmMult(Actor a)
@@ -521,6 +624,11 @@ namespace CivMindOverhaul
                         t = Math.Min(0.95f, t * mult);
                         First.Fire("shock rout");
                     }
+                }
+                if (Cfg.ArmyExhaustion && Cfg.ExhaustFleeMult > 0f && a.army != null && WarFx.IsExhausted(a.army.id))
+                {
+                    t = Math.Min(0.95f, t * Cfg.ExhaustFleeMult);
+                    First.Fire("exhausted rout");
                 }
                 if (a.getHealthRatio() < t)
                 {

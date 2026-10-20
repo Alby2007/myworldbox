@@ -699,11 +699,25 @@ namespace CivMindOverhaul
         internal static readonly Dictionary<long, float> VetArmies = new Dictionary<long, float>();
         internal static readonly Dictionary<long, int> TruceBreak = new Dictionary<long, int>();
         internal static readonly Dictionary<long, TributeDeal> Tribute = new Dictionary<long, TributeDeal>();
+        internal static readonly Dictionary<long, float> RetreatUntil = new Dictionary<long, float>();
+        internal static readonly Dictionary<long, float> AwaySince = new Dictionary<long, float>();
 
         internal static bool IsVeteran(long pArmyId)
         {
             float exp;
             return VetArmies.TryGetValue(pArmyId, out exp) && exp > UnityEngine.Time.time;
+        }
+
+        internal static bool IsRetreating(long pArmyId)
+        {
+            float exp;
+            return RetreatUntil.TryGetValue(pArmyId, out exp) && exp > UnityEngine.Time.time;
+        }
+
+        internal static bool IsExhausted(long pArmyId)
+        {
+            float since;
+            return AwaySince.TryGetValue(pArmyId, out since) && UnityEngine.Time.time - since > Cfg.ExhaustAfterSec;
         }
     }
 
@@ -722,6 +736,12 @@ namespace CivMindOverhaul
         private static readonly AccessTools.FieldRef<City, Kingdom> _cityKingdom = TryRef<City, Kingdom>("kingdom");
         private static readonly AccessTools.FieldRef<Actor, ActorData> _actorData = TryRef<Actor, ActorData>("data");
         private static readonly AccessTools.FieldRef<Actor, WorldTile> _behTileTarget = TryRef<Actor, WorldTile>("beh_tile_target");
+        private static readonly MethodInfo _findEnemies = Ref.Method(typeof(EnemiesFinder), "findEnemiesFrom", new Type[]
+        {
+            typeof(WorldTile),
+            typeof(Kingdom),
+            typeof(int)
+        });
         private static readonly Dictionary<long, float> _duelPairs = new Dictionary<long, float>();
 
         private static AccessTools.FieldRef<T, F> TryRef<T, F>(string pName)
@@ -752,13 +772,22 @@ namespace CivMindOverhaul
                 {
                     return;
                 }
-                TickFocusFire(__instance, cap);
-                TickDuels(__instance, cap);
+                TickRetreat(__instance, cap);
+                TickExhaustion(__instance, cap);
+                bool retreating = WarFx.IsRetreating(__instance.id);
+                if (!retreating)
+                {
+                    TickFocusFire(__instance, cap);
+                    TickDuels(__instance, cap);
+                }
                 TickPillage(__instance, cap);
                 TickDesertion(__instance, cap);
                 TickRotation(__instance, cap);
-                TickFormations(__instance, cap);
-                TickRelief(__instance, cap);
+                if (!retreating)
+                {
+                    TickFormations(__instance, cap);
+                    TickRelief(__instance, cap);
+                }
                 TickVeterancy(__instance, cap);
             }
             catch (Exception e)
@@ -775,6 +804,9 @@ namespace CivMindOverhaul
                 _nextPrune = now + 30f;
                 Prune(WarFx.Shaken, now);
                 Prune(_duelPairs, now);
+                Prune(WarFx.RetreatUntil, now);
+                Prune(WarFx.VetArmies, now);
+                PruneDeadArmies(WarFx.AwaySince);
             }
             if (!Cfg.MoraleShock || pOldCaptain == null || !pOldCaptain.isRekt() || pArmy.isGroupInCityAndHaveLeader())
             {
@@ -809,6 +841,91 @@ namespace CivMindOverhaul
                 {
                     pDict.Remove(dead[i]);
                 }
+            }
+        }
+
+        private static void PruneDeadArmies(Dictionary<long, float> pDict)
+        {
+            List<long> dead = null;
+            foreach (KeyValuePair<long, float> kv in pDict)
+            {
+                if (World.world.armies.get(kv.Key) == null)
+                {
+                    if (dead == null)
+                    {
+                        dead = new List<long>();
+                    }
+                    dead.Add(kv.Key);
+                }
+            }
+            if (dead != null)
+            {
+                for (int i = 0; i < dead.Count; i++)
+                {
+                    pDict.Remove(dead[i]);
+                }
+            }
+        }
+
+        private static void TickRetreat(Army pArmy, Actor pCaptain)
+        {
+            if (!Cfg.ArmyRetreat || _findEnemies == null || WarFx.IsRetreating(pArmy.id) || !Randy.randomChance(0.05f))
+            {
+                return;
+            }
+            if (pArmy.countUnits() < Cfg.RetreatMinUnits || pCaptain.current_tile == null)
+            {
+                return;
+            }
+            Kingdom k = pArmy.getKingdom();
+            if (k == null)
+            {
+                return;
+            }
+            EnemyFinderData data = _findEnemies.Invoke(null, new object[] { pCaptain.current_tile, k, -1 }) as EnemyFinderData;
+            if (data == null || data.isEmpty())
+            {
+                return;
+            }
+            int enemies = 0;
+            for (int i = 0; i < data.list.Count; i++)
+            {
+                if (data.list[i] is Actor a && a.isWarrior() && a.isAlive())
+                {
+                    enemies++;
+                }
+            }
+            if (enemies >= pArmy.countUnits() * Cfg.RetreatRatio)
+            {
+                WarFx.RetreatUntil[pArmy.id] = UnityEngine.Time.time + Cfg.RetreatSeconds;
+                First.Fire("army retreating");
+                UnityEngine.Debug.Log("[CivMind] army retreating: " + pArmy.name + " (outmatched " + enemies + " vs " + pArmy.countUnits() + ")");
+            }
+        }
+
+        private static void TickExhaustion(Army pArmy, Actor pCaptain)
+        {
+            if (!Cfg.ArmyExhaustion)
+            {
+                return;
+            }
+            Kingdom k = pArmy.getKingdom();
+            if (k == null || pCaptain.current_zone == null)
+            {
+                return;
+            }
+            City zoneCity = pCaptain.current_zone.city;
+            if (zoneCity != null && Rebel.Of(zoneCity) == k)
+            {
+                WarFx.AwaySince.Remove(pArmy.id);
+            }
+            else if (!WarFx.AwaySince.ContainsKey(pArmy.id))
+            {
+                WarFx.AwaySince[pArmy.id] = UnityEngine.Time.time;
+            }
+            else if (WarFx.IsExhausted(pArmy.id))
+            {
+                First.Fire("exhausted army");
             }
         }
 
@@ -967,6 +1084,10 @@ namespace CivMindOverhaul
                 {
                     chance *= Cfg.MutinyDesertionMult;
                 }
+            }
+            if (Cfg.ArmyExhaustion && WarFx.IsExhausted(pArmy.id))
+            {
+                chance *= Cfg.ExhaustDesertionMult;
             }
             if (chance <= 0f || !Randy.randomChance(chance))
             {
@@ -1498,6 +1619,30 @@ namespace CivMindOverhaul
                             winner.capital.addResourcesToRandomStockpile("gold", total);
                             First.Fire("reparations");
                             UnityEngine.Debug.Log("[CivMind] reparations: " + total + " gold from " + loser.name + " to " + winner.name);
+                        }
+                    }
+                    if (Cfg.VictoryFireworks && winner.isAlive())
+                    {
+                        int fired = 0;
+                        foreach (City c in winner.getCities())
+                        {
+                            int n = 0;
+                            for (int i = 0; i < c.units.Count && n < Cfg.FestiveMaxPerCity; i++)
+                            {
+                                Actor u = c.units[i];
+                                if (u == null || u.isRekt() || u.isBaby() || !Randy.randomChance(Cfg.FestiveChance))
+                                {
+                                    continue;
+                                }
+                                Rebel.AddStatus(u, "festive_spirit", Cfg.FestiveSeconds);
+                                n++;
+                            }
+                            fired += n;
+                        }
+                        if (fired > 0)
+                        {
+                            First.Fire("victory fireworks");
+                            UnityEngine.Debug.Log("[CivMind] festive: " + winner.name + " celebrates victory (" + fired + " citizens)");
                         }
                     }
                 }
@@ -2072,7 +2217,21 @@ namespace CivMindOverhaul
         }
         internal static readonly MethodInfo SetCulture = Ref.Method(typeof(City), "setCulture", new Type[] { typeof(Culture) });
         internal static readonly MethodInfo SetReligion = Ref.Method(typeof(City), "setReligion", new Type[] { typeof(Religion) });
+        internal static readonly MethodInfo AddStatusM = Ref.Method(typeof(BaseSimObject), "addStatusEffect", new Type[]
+        {
+            typeof(string),
+            typeof(float),
+            typeof(bool)
+        });
         internal static readonly HashSet<long> Revolted = new HashSet<long>();
+
+        internal static void AddStatus(BaseSimObject pObj, string pId, float pSeconds)
+        {
+            if (AddStatusM != null && pObj != null)
+            {
+                AddStatusM.Invoke(pObj, new object[] { pId, pSeconds, true });
+            }
+        }
 
         internal static Kingdom Of(City pCity)
         {
@@ -3077,6 +3236,53 @@ namespace CivMindOverhaul
             catch (Exception e)
             {
                 UnityEngine.Debug.LogWarning("[CivMind] combat action wrap failed: " + e.Message);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(BehCityActorCheckAttack), "execute")]
+    internal static class PatchCheckAttack
+    {
+        private static readonly AccessTools.FieldRef<Actor, WorldTile> _behTileTarget = TryRef();
+
+        private static AccessTools.FieldRef<Actor, WorldTile> TryRef()
+        {
+            try
+            {
+                return Ref.FieldRef<Actor, WorldTile>("beh_tile_target");
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static void Postfix(Actor pActor, ref BehResult __result)
+        {
+            if (__result != BehResult.Continue || !Cfg.ArmyRetreat || _behTileTarget == null || pActor == null || pActor.army == null)
+            {
+                return;
+            }
+            try
+            {
+                if (!WarFx.IsRetreating(pActor.army.id))
+                {
+                    return;
+                }
+                City home = pActor.city;
+                if (home == null)
+                {
+                    return;
+                }
+                WorldTile t = home.getTile();
+                if (t != null)
+                {
+                    _behTileTarget(pActor) = t;
+                    First.Fire("retreat redirect");
+                }
+            }
+            catch
+            {
             }
         }
     }

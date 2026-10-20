@@ -99,7 +99,16 @@ armies rout when beaten, and wars actually end.
 - **Truce-break reputation** — early re-declarations cost global opinion
 - **Installment tribute** — losers pay the victor yearly for a decade
 
-Every feature is toggleable/tunable in-game: **NML window → mod → Mod Configuration** (~160 options).
+### Life & attrition (v1.1)
+
+- **Army retreats** — outmatched armies march home instead of dying in place (redirects vanilla attack orders)
+- **Field exhaustion** — armies away from home zones too long suffer desertion and rout easier
+- **Civilian rescue** — stranded citizens re-request boats sooner; transport boats outrank trade runs
+- **Victory celebrations** — winning a decisive war sets off `festive_spirit` fireworks in the victor's cities
+- **Education retune** — citizens read more often and with a relaxed intelligence gate (books → stats → leaders)
+- **Intensity-scaled firefighting** — `put_out_fire` weight scales with active fires; infernos get swarmed
+
+Every feature is toggleable/tunable in-game: **NML window → mod → Mod Configuration** (~180 options).
 See [docs/config-reference.md](docs/config-reference.md) for the full list.
 
 ## Install

@@ -28,7 +28,20 @@ Every user-facing option (NML window → mod → **Mod Configuration**). Sources
 | Id | Label | Default | Range | Controls |
 |---|---|---|---|---|
 | `ReproductionWeight` | Reproduction urge | 1.3 | 0–4 | Weight × on `find_lover`, `check_lover_city`, `sexual_reproduction_try` (housed units) |
-| `SocializeWeight` | Socializing urge | 1.6 | 0–4 | Weight × on `socialize_initial_check`, `check_swearing`, `try_to_read` |
+| `SocializeWeight` | Socializing urge | 1.6 | 0–4 | Weight × on `socialize_initial_check`, `check_swearing` |
+| `CivReturnWeight` | Stranded civilians seek home | 1.7 | 0–5 | Weight × on `try_to_return_to_home_city` |
+| `CivReturnCooldown` | Home-return cooldown | 0.7 | 0.1–2 | Cooldown × on `try_to_return_to_home_city` |
+| `BoatTaxiWeight` | Boat rescue priority | 2.3 | 0–5 | Weight × on `boat_transport_check` (rescue vs trade) |
+| `VictoryFireworks` | Victory celebrations | switch | on | `festive_spirit` on winner's citizens at `endWar` |
+| `FestiveChance` | Citizen festive chance | 0.35 | 0–1 | Per-unit roll for `festive_spirit` |
+| `FestiveMaxPerCity` | Max festive citizens | 8 | 0–50 | Per-city cap on celebrations |
+| `FestiveSeconds` | Celebration duration | 120 | 10–600 | Status duration in seconds |
+| `ReadWeight` | Reading urge | 2.5 | 0–6 | Weight × on `try_to_read` |
+| `ReadCooldown` | Reading cooldown | 0.5 | 0.1–2 | Cooldown × on `try_to_read` |
+| `ReadMinInt` | Min intelligence to read | 3 | 0–10 | Relaxed gate vs vanilla 5 |
+| `Firefighting` | Intensity-scaled firefighting | switch | on | `put_out_fire` weight += fires × `FireWeightPer` |
+| `FireWeightPer` | Weight per active fire | 1.0 | 0–5 | Weight bonus per burning zone |
+| `FireMaxBonus` | Max fire bonus | 10 | 0–50 | Cap on the fire-intensity bonus |
 
 ## Experimental
 
@@ -265,6 +278,14 @@ v1.0 army behavior — all army ticks run inside `Army.checkCaptainExistence`.
 | `RangeShare` | Target ranged share | slider | 0.4 | 0.1–0.9 | Preferred ranged fraction of the army |
 | `SiegeMomentum` | Siege momentum | switch | on | — | Extra attackers accelerate capture |
 | `MomentumPerUnit` | Capture boost per unit | slider | 0.05 | 0–0.5 | `_capture_ticks` bonus × elapsed per unit past 1st; capped at 10 effective |
+| `ArmyRetreat` | Outmatched armies retreat | switch | on | — | `WarFx.RetreatUntil` flag drives `PatchCheckAttack` redirect |
+| `RetreatRatio` | Retreat when outnumbered × | slider | 2.5 | 1–6 | Enemy warriors ≥ units × this → retreat |
+| `RetreatMinUnits` | Min army size to retreat | slider | 3 | 0–20 | Tiny patrols never retreat |
+| `RetreatSeconds` | Retreat duration | slider | 60 | 10–300 | Seconds the flag stays live before re-check |
+| `ArmyExhaustion` | Field armies exhaust | switch | on | — | `WarFx.AwaySince` age → `IsExhausted` |
+| `ExhaustAfterSec` | Away time before exhaustion | slider | 240 | 30–1200 | Seconds off home zones before effects apply |
+| `ExhaustDesertionMult` | Exhaustion desertion × | slider | 3 | 1–8 | Multiplies `TickDesertion` chance while exhausted |
+| `ExhaustFleeMult` | Exhaustion rout threshold × | slider | 1.2 | 0–3 | `run_away` threshold × while exhausted (0 disables) |
 
 ## Statecraft
 

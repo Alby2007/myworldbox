@@ -666,3 +666,56 @@ Decisive war ends (`PatchEndWar`) → `WarFx.Tribute[loser]` records
 `min(TributeAnnual, gold)` yearly via `PatchCheckLoyalty` into the winner's
 capital stockpile — defeated realms bleed for `TributeYears` (10). Logged:
 `tribute:` / `tribute deal:`.
+## 83. Army-level retreat
+
+`TickRetreat` (in `PatchArmyTick`, 5%-throttled) counts hostile warriors via
+`EnemiesFinder.findEnemiesFrom`; if enemies ≥ `countUnits × RetreatRatio` (2.5)
+and the army has ≥ `RetreatMinUnits` (3), `WarFx.RetreatUntil[army]` =
+now + `RetreatSeconds` (60). `PatchCheckAttack` (postfix on
+`BehCityActorCheckAttack.execute`) then redirects the unit's `beh_tile_target`
+to `pActor.city.getTile()` whenever vanilla would send it attacking — the
+whole army walks home on vanilla pathing, followers chasing the captain.
+While `IsRetreating`, `TickFocusFire`/`TickDuels`/`TickFormations`/`TickRelief`
+are skipped; pillage/desertion/veterancy still run. Expiry re-rolls the
+outmatched check. Cross-island retreats dead-end at shore → vanilla warrior
+taxi takes over. Logged: `army retreating:`.
+
+## 84. Army supply exhaustion
+
+`WarFx.AwaySince[army]` records when the captain last stood outside own-kingdom
+zones (`TickExhaustion`; standing on a home zone clears it). Once the entry
+ages past `ExhaustAfterSec` (240s) the army is `IsExhausted`:
+`TickDesertion` chance × `ExhaustDesertionMult` (3), and `run_away` gets a
+× `ExhaustFleeMult` (1.2) rout threshold. Dead armies are pruned from the dict
+in the 30 s prune pass. Logged via `first fire: exhausted army` /
+`exhausted rout`.
+
+## 85. Stranded-civilian taxi
+
+Vanilla `try_to_return_to_home_city` (w3, cd15) already calls
+`TaxiManager.newRequest` — it just loses to `boat_trading` (w1.3, tied).
+`RetuneMult` lifts the return-home decision to w×`CivReturnWeight` (1.7) /
+cd×`CivReturnCooldown` (0.7) and `boat_transport_check` to
+w×`BoatTaxiWeight` (2.3) — boats prefer rescuing citizens over trading.
+Residual limit: the kingdom must own transport boats.
+
+## 86. Victory fireworks
+
+`PatchEndWar` on decisive endings (`Attackers`/`Defenders`, not `Peace`):
+the winning main kingdom's cities roll `FestiveChance` (0.35) per unit up to
+`FestiveMaxPerCity` (8) → `Rebel.AddStatus("festive_spirit", FestiveSeconds)`
+— citizens launch fireworks from their own pockets (vanilla
+`try_to_launch_fireworks` reads the status). Logged: `festive:`.
+
+## 87. Education retune
+
+`try_to_read` retuned to w×`ReadWeight` (2.5), cd×`ReadCooldown` (0.5 → 60 s),
+plus an `action_check_launch` wrap relaxing the vanilla `intelligence > 5`
+gate to `ReadMinInt` (3) — `BehFinishReading` writes book bonuses straight to
+`ActorData`, so literate societies feed merit leaders/succession faster.
+
+## 88. Intensity-scaled firefighting
+
+`put_out_fire` weight wrap (compose-with-original): `w +
+min(city.tasks.fire, FireMaxBonus) × FireWeightPer` — weight 4 → 14 during
+infernos so big fires swarm while small ones stay routine.

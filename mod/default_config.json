@@ -87,6 +87,93 @@
             "FloatVal": 1.6,
             "MinFloatVal": 0.0,
             "MaxFloatVal": 4.0
+        },
+        {
+            "Id": "CivReturnWeight",
+            "Type": "SLIDER",
+            "FloatVal": 1.7,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 5.0
+        },
+        {
+            "Id": "CivReturnCooldown",
+            "Type": "SLIDER",
+            "FloatVal": 0.7,
+            "MinFloatVal": 0.1,
+            "MaxFloatVal": 2.0
+        },
+        {
+            "Id": "BoatTaxiWeight",
+            "Type": "SLIDER",
+            "FloatVal": 2.3,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 5.0
+        },
+        {
+            "Id": "VictoryFireworks",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "FestiveChance",
+            "Type": "SLIDER",
+            "FloatVal": 0.35,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 1.0
+        },
+        {
+            "Id": "FestiveMaxPerCity",
+            "Type": "SLIDER",
+            "FloatVal": 8.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 50.0
+        },
+        {
+            "Id": "FestiveSeconds",
+            "Type": "SLIDER",
+            "FloatVal": 120.0,
+            "MinFloatVal": 10.0,
+            "MaxFloatVal": 600.0
+        },
+        {
+            "Id": "ReadWeight",
+            "Type": "SLIDER",
+            "FloatVal": 2.5,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 6.0
+        },
+        {
+            "Id": "ReadCooldown",
+            "Type": "SLIDER",
+            "FloatVal": 0.5,
+            "MinFloatVal": 0.1,
+            "MaxFloatVal": 2.0
+        },
+        {
+            "Id": "ReadMinInt",
+            "Type": "SLIDER",
+            "FloatVal": 3.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 10.0
+        },
+        {
+            "Id": "Firefighting",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "FireWeightPer",
+            "Type": "SLIDER",
+            "FloatVal": 1.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 5.0
+        },
+        {
+            "Id": "FireMaxBonus",
+            "Type": "SLIDER",
+            "FloatVal": 10.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 50.0
         }
     ],
     "Experimental": [
@@ -1210,6 +1297,58 @@
             "FloatVal": 0.05,
             "MinFloatVal": 0.0,
             "MaxFloatVal": 0.5
+        },
+        {
+            "Id": "ArmyRetreat",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "RetreatRatio",
+            "Type": "SLIDER",
+            "FloatVal": 2.5,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 6.0
+        },
+        {
+            "Id": "RetreatMinUnits",
+            "Type": "SLIDER",
+            "FloatVal": 3.0,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 20.0
+        },
+        {
+            "Id": "RetreatSeconds",
+            "Type": "SLIDER",
+            "FloatVal": 60.0,
+            "MinFloatVal": 10.0,
+            "MaxFloatVal": 300.0
+        },
+        {
+            "Id": "ArmyExhaustion",
+            "Type": "SWITCH",
+            "BoolVal": true
+        },
+        {
+            "Id": "ExhaustAfterSec",
+            "Type": "SLIDER",
+            "FloatVal": 240.0,
+            "MinFloatVal": 30.0,
+            "MaxFloatVal": 1200.0
+        },
+        {
+            "Id": "ExhaustDesertionMult",
+            "Type": "SLIDER",
+            "FloatVal": 3.0,
+            "MinFloatVal": 1.0,
+            "MaxFloatVal": 8.0
+        },
+        {
+            "Id": "ExhaustFleeMult",
+            "Type": "SLIDER",
+            "FloatVal": 1.2,
+            "MinFloatVal": 0.0,
+            "MaxFloatVal": 3.0
         }
     ],
     "Statecraft": [

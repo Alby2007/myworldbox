@@ -157,6 +157,15 @@
 81. Truce-break rep — `PatchStartWar` (argTypes on internal `startWar`) stamps `WarFx.TruceBreak` when `timestamp_last_war_ended` < `minimum_years_between_wars`; `PatchOpinionInit` injects `opinion_truce_breaker` (−`TruceBreakOpinion` for `TruceBreakYears`)
 82. Installment tribute — `PatchEndWar` writes `WarFx.Tribute[loser]={Winner,Expiry,LastPaid}` on decisive wins; `PatchCheckLoyalty` pays `min(TributeAnnual,gold)` from loser capital → winner capital once/year until `Expiry`
 
+## Mod features (v1.1 — life & attrition)
+
+83. Army retreat — `TickRetreat` (PatchArmyTick, 5%/tick): `findEnemiesFrom` warriors ≥ `countUnits × RetreatRatio` → `WarFx.RetreatUntil[army]=now+RetreatSeconds`; `PatchCheckAttack` postfix on `BehCityActorCheckAttack.execute` redirects `beh_tile_target` → `city.getTile()` while `IsRetreating` (beh_tile_target via FieldRef); offensive ticks (focus fire/duels/kiting/relief) skip while flag lives
+84. Field exhaustion — `WarFx.AwaySince` = captain's last time off own zones (`TickExhaustion`; home zone clears); `IsExhausted` (age > `ExhaustAfterSec`) → `TickDesertion` ×`ExhaustDesertionMult` + `run_away` ×`ExhaustFleeMult`; pruned via dead-army lookup (`AwaySince` stores start not expiry — can't share the expiry `Prune`)
+85. Civilian taxi — `try_to_return_to_home_city` retune (w×1.7/cd×0.7) + `boat_transport_check` w×2.3 — boats prefer rescue over `boat_trading` (vanilla ties at w1.3)
+86. Victory fireworks — `PatchEndWar` decisive win → per winner city, `FestiveChance` per unit cap `FestiveMaxPerCity` → `Rebel.AddStatus("festive_spirit", FestiveSeconds)` (hoisted `_addStatus` handle — shared `Rebel.AddStatus` helper)
+87. Education — `try_to_read` w×2.5/cd×0.5 + `action_check_launch` wrap relaxing `intelligence ≤ 5` gate → `ReadMinInt` (3); `_stats`/`_origLaunch` dicts added to Tuning.cs
+88. Firefighting — `put_out_fire` `weight_calculate_custom` wrap (compose-with-original via `_origWeight`/`_origCustom` snapshots): `w + min(city.tasks.fire, FireMaxBonus) × FireWeightPer`
+
 ## Access gotchas
 - `internal` (use `AccessTools` reflection): `City.hasBuildingToBuild`, `hasStorageBuilding`, `hasBuildingType`, `City.kingdom`, `City.city_center`, `City.zones`, `City.storages`, `City._timer_warrior`, `City.tryToMakeWarrior`, `City.makeOwnKingdom`, `City.addZone`/`removeZone`, `City.setCulture`/`setReligion`, `DiplomacyManager.startWar`, `Actor.beh_tile_target`, `Actor.beh_building_target`, `Actor.isProfession`, `Actor.addExperience`, `Actor.data`, `Actor.attack_target`, `Actor.has_attack_target`, `Actor.getHit` (internal override, 7 params), `BaseSimObject.stats`, `BaseSimObject.addStatusEffect(string,float,bool)` — note the StatusAsset overload is separate
 - `City.giveItem(Actor, List<long>, City)` is **public static**, returns bool — `PatchGiveItem` diffs total equipped `Item.getValue()` across all `EquipmentType` slots (prefix `__state` → postfix charge `ActorData.money`, deposit to city gold; free while `isInDanger`)
